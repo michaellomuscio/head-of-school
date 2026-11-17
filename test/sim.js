@@ -65,6 +65,7 @@ function run(policyName, years, seed, scenario, missionId, quiet) {
       else if (p.type === 'admit') { const [a, aid] = P.admit(S); G.commitAdmissions(S, a, aid); }
       else if (p.type === 'review') { if (!quiet) { const y = S.years[S.years.length - 1]; console.log(`${String(y.y + 1).padStart(2)} ${String(y.students).padStart(5)} ${String(y.apps).padStart(5)} ${(S.lastAdmitRate * 100).toFixed(0).padStart(4)} ${(y.yield * 100).toFixed(0).padStart(4)} ${(y.retention * 100).toFixed(0).padStart(4)} ${G.money(y.net).padStart(7)} ${G.money(y.cash).padStart(8)} ${G.money(y.endow).padStart(8)} ${G.money(y.debt).padStart(6)} ${y.rep.toFixed(0).padStart(4)} ${y.sat.toFixed(0).padStart(3)} ${y.morale.toFixed(0).padStart(3)} ${y.fq.toFixed(0).padStart(3)} ${y.eq.toFixed(0).padStart(3)} ${y.board.toFixed(0).padStart(3)} ${G.money(y.tuition).padStart(6)} ${(y.discount * 100).toFixed(0).padStart(4)} ${(S.salaryIdx * 100).toFixed(0).padStart(4)} ${String(y.legacy).padStart(4)}  ${S.review.areas.map((a) => a.grade).join(' ')} ${S.review.verdict || ''}`); } G.ackReview(S, false); }
       else if (p.type === 'event') { const e = G.EVENT_BY[p.id]; G.resolveEvent(S, p.id, P.event(S, e)); }
+      else if (p.type === 'plan') { if (!G.commitPlan(S, P.plan ? P.plan(S, p.opts) : p.opts[0])) G.clearPending(S, 'plan'); }
       else if (p.type === 'over') break;
       else G.clearPending(S, p.type);
     }
@@ -73,6 +74,7 @@ function run(policyName, years, seed, scenario, missionId, quiet) {
     G.tick(S);
     for (const k of ['cash', 'endow', 'rep', 'sat', 'morale', 'fq', 'board']) if (!isFinite(S[k])) throw new Error('NaN in ' + k + ' at week ' + S.week);
   }
+  if (!quiet) console.log('plan: ' + S.plan.join(', ') + ' | banners: ' + Object.keys(S.banners).join(', '));
   if (!quiet) console.log(S.over ? `OVER: ${S.over.why} in year ${G.yr(S) + 1}, legacy ${S.over.legacy.total} (${S.over.legacy.title})` : `survived ${years} years, legacy ${G.legacy(S).total} (${G.legacy(S).title}) buildings: ${S.bld.map((b) => b.t).join(',')}`);
   return S;
 }
@@ -85,4 +87,4 @@ if (require.main === module) {
     }
   } else run(policyName, +years, +seed, scenario, missionId, quiet);
 }
-module.exports = { run };
+module.exports = { run, POLICY };

@@ -144,3 +144,47 @@ const RIVAL_DEFS = [
   { id: 'parish', names: ['St. Brigid Parish School', 'Holy Cross Parish School', 'St. Anselm School'], home: 'middle', price: 0.44, rep: 46, bias: 0, k8: true,
     blurb: 'K–8 only and half your price. Competes for cost-conscious families.' },
 ];
+
+/* Where the head's own days go: ten a month. Two per area is the neutral habit; more helps with diminishing returns, less is noticed. */
+const TIME_DAYS = 10;
+const TIME_AREAS = [
+  { id: 'faculty', name: 'In classrooms', does: 'Class visits, mentoring and hallway conversations. Lifts morale and helps teachers grow.' },
+  { id: 'families', name: 'With families', does: 'Carline, coffees, games and concerts. Lifts family satisfaction.' },
+  { id: 'donors', name: 'With donors', does: 'Lunches, visits and thank-you calls. Lifts the annual fund and campaigns.' },
+  { id: 'admissions', name: 'At admission events', does: 'Open houses, tours and preschool visits. More applications and better yield.' },
+  { id: 'board', name: 'With trustees', does: 'Committee meetings and one-on-ones. Builds board confidence, slowly.' },
+];
+
+/* Strategic plan pillars. The board asks for one after your first year and at every contract renewal; each is permanent.
+   fx keys are read by the sim: morale, sat, rep, eq are standing points; apps, aidApps, giving, aux, upkeep, admin, beta, bus, outcome, nbApps are
+   fractional changes; ret, trans, part, aidYield are probabilities; hire and q are quality points; fq is quality per year;
+   cost, perFac and once are dollars at year-one prices. In perks, {$N} prints N dollars at today's prices and {$Nt} prints N per teacher. */
+const PILLARS = [
+  { id: 'faculty', name: 'Faculty First', line: 'A mentor for every new teacher and sabbaticals for the veterans.',
+    perks: ['Stronger hires and faster teacher growth', 'Faculty morale +4', 'Costs about {$1800t} a year'], fx: { hire: 4, fq: 0.45, morale: 4, perFac: 1800 } },
+  { id: 'door', name: 'The Open Door', line: 'A public promise that money will not be the reason a child cannot come.',
+    perks: ['35% more aid applicants, and more of them say yes', 'More families give; reputation +1.5', 'Full-pay families grow more price sensitive'], fx: { aidApps: 0.35, aidYield: 0.05, part: 0.05, rep: 1.5, beta: 0.03 } },
+  { id: 'select', name: 'Selective by Design', line: 'Fewer offers, a stronger class and a longer waiting list.',
+    perks: ['Stronger applicants (+4 profile)', 'Reputation +2', 'Parents react half again as hard to college results'], fx: { q: 4, rep: 2, outcome: 0.5 } },
+  { id: 'city', name: 'City as Classroom', line: 'Internships downtown, lab time at the university, studios in the arts district.',
+    perks: ['20% more applicants from downtown, university and arts neighborhoods', 'Teaching quality +1.5', 'Costs {$110000} a year'], fx: { nbApps: 0.2, eq: 1.5, cost: 110000 }, nbTypes: ['downtown', 'university', 'arts'] },
+  { id: 'global', name: 'Global Campus', line: 'Students from abroad, living with host families and paying full tuition.',
+    perks: ['About 8 more full-pay Upper School applicants a year', 'Families −2.5 unless Wellness is Strong', 'Costs {$90000} a year'], fx: { intl: 8, satNeed: -2.5, cost: 90000 } },
+  { id: 'yearround', name: 'Year-Round Campus', line: 'Camps, conferences and weddings. The gates never close.',
+    perks: ['Auxiliary income +40%', 'Buildings wear faster', 'Faculty morale −1.5'], fx: { aux: 0.4, wear: 0.7, morale: -1.5 } },
+  { id: 'green', name: 'Green Campus', line: 'Insulation, heat pumps and a garden the second grade runs.',
+    perks: ['Building operating costs −10%', 'Reputation +1 and 4% more applicants', 'Costs {$350000} up front'], fx: { upkeep: -0.1, rep: 1, apps: 0.04, once: 350000 } },
+  { id: 'giving', name: 'Culture of Giving', line: 'Every family asked, every gift thanked, every class with an agent.',
+    perks: ['Annual fund and campaigns +14%', 'Families −1: the asking never stops'], fx: { giving: 0.14, sat: -1 } },
+  { id: 'promise', name: 'The Tuition Promise', line: 'Increases held close to inflation, in writing.',
+    perks: ['Retention +1.5% and 6% more applicants', 'Tuition can rise no more than 1.5 points above inflation'], fx: { ret: 0.015, apps: 0.06, tuitionCap: 1.5 } },
+  { id: 'k12', name: 'One School, K–12', line: 'Fifth graders shadow sixth. Eighth graders choose Upper School courses in March.',
+    perks: ['Far fewer families leave after grades 5 and 8', 'Families +1', 'Costs {$70000} a year'], fx: { trans: 0.04, sat: 1, cost: 70000 } },
+  { id: 'lean', name: 'Lean Operations', line: 'Shared services, renegotiated contracts and a hard look at every line.',
+    perks: ['Administrative and operating costs −6%', 'Faculty morale −2 and families −1'], fx: { admin: -0.06, morale: -2, sat: -1 } },
+  { id: 'known', name: 'Known and Cared For', line: 'An advisor for every student and a counselor in every division.',
+    perks: ['Families +2.5 and retention +0.8%', 'Costs {$130000} a year'], fx: { sat: 2.5, ret: 0.008, cost: 130000 } },
+  { id: 'reach', name: 'Every Neighborhood', line: 'Buses, open houses in church halls and a tuition calculator in three languages.',
+    perks: ['Bus routes cost half', 'More families in every neighborhood know you', 'Costs {$80000} a year'], fx: { bus: -0.5, aware: 0.06, cost: 80000 } },
+];
+const PILLAR_BY = {}; PILLARS.forEach((p) => (PILLAR_BY[p.id] = p));

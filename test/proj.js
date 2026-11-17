@@ -8,6 +8,7 @@ for (const seed of [7, 21, 44]) {
       else if (p.type === 'admit') G.commitAdmissions(S, G.defaultAdmit(S), Math.min(G.maxAid(S), G.defaultAid(S)));
       else if (p.type === 'review') { out.push(`Y${S.review.y + 1}: stud ${G.students(S)} proj@Oct ${G.money(p12)} budget@Oct ${G.money(b12)} proj@Feb ${G.money(p30)} actual ${G.money(S.review.net)} oneoff ${G.money(S.ytd.oneoff)} board ${S.board.toFixed(0)}`); G.ackReview(S, false); }
       else if (p.type === 'event') G.resolveEvent(S, p.id, 0);
+      else if (p.type === 'plan') G.commitPlan(S, p.opts[0]);
       else G.clearPending(S, p.type);
     }
     G.tick(S);

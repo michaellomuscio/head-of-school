@@ -1,7 +1,7 @@
 /* Boot, the game loop, input, saving and sound. */
 const SAVE_KEY = 'hos-save-1';
 function save() { try { if (App.S && !App.setup) localStorage.setItem(SAVE_KEY, JSON.stringify(App.S)); } catch (e) { /* storage is optional */ } }
-function loadSave() { try { const t = localStorage.getItem(SAVE_KEY); if (!t) return null; const S = JSON.parse(t); return S && S.v === 1 && !S.over && S.grades && S.city ? S : null; } catch (e) { return null; } }
+function loadSave() { try { const t = localStorage.getItem(SAVE_KEY); if (!t) return null; const S = JSON.parse(t); return S && S.v === 1 && !S.over && S.grades && S.city ? migrate(S) : null; } catch (e) { return null; } }
 function clearSave() { try { localStorage.removeItem(SAVE_KEY); } catch (e) { /* fine */ } }
 
 /* Interface memory (which hints were seen, first-steps progress). Separate from the saved school. */
@@ -10,6 +10,18 @@ function saveUI() { try { localStorage.setItem(UI_KEY, JSON.stringify(App.ui)); 
 function loadUI() { try { const u = JSON.parse(localStorage.getItem(UI_KEY) || 'null'); if (u && u.seen && u.tour) Object.assign(App.ui, u); } catch (e) { /* optional */ } }
 function tourMark(k) { if (App.setup || App.ui.tour[k]) return; App.ui.tour[k] = 1; saveUI(); if (App.tab === 'desk' && !App.modal) renderPanel(); }
 const receipt = (text) => toast({ kind: 'info', key: 'receipt', text });
+
+/* Hall of Heads: every finished tenure on this device. Separate from the saved school, and optional like it. */
+const HALL_KEY = 'hos-hall-1';
+function hallLoad() { try { const h = JSON.parse(localStorage.getItem(HALL_KEY) || '[]'); return Array.isArray(h) ? h.filter((r) => r && r.name && isFinite(r.legacy)) : []; } catch (e) { return []; } }
+function recordTenure(S) {
+  if (!S.over || S.over.saved) return; S.over.saved = true;
+  const h = hallLoad(); h.push({ name: S.name, sc: S.scenario, mission: S.mission, years: tenureYears(S), legacy: S.over.legacy.total, title: S.over.legacy.title, why: S.over.why, banners: bannerCount(S), at: Date.now() });
+  h.sort((a, b) => b.legacy - a.legacy);
+  try { localStorage.setItem(HALL_KEY, JSON.stringify(h.slice(0, 30))); } catch (e) { /* optional */ }
+}
+/* The public address of the game, when the page declares one. */
+function playUrl() { const m = document.querySelector('meta[name="hos:url"]'); return m ? m.getAttribute('content') : ''; }
 
 let AC = null;
 function beep(kind) {
@@ -83,6 +95,19 @@ const ACT = {
     else receipt(DIV_NAMES[p[0]] + ' School: ' + S.fac[p[0]] + ' teachers, ' + ratio(S, p[0]).toFixed(1) + ' students each. ' + (p[1] > 0 ? 'Adds ' : 'Saves ') + money(S.mktSalary * S.salaryIdx * 1.27) + ' a year.');
     renderAll();
   },
+  time(a, S) {
+    const p = a.split(','), A = TIME_AREAS.find((x) => x.id === p[0]);
+    if (!setTime(S, p[0], +p[1])) receipt(+p[1] > 0 ? 'All ten days are spoken for. Take a day from somewhere else first.' : 'That is already zero.');
+    else { tourMark('time'); const d = S.time[p[0]]; receipt(A.name + ': ' + d + (d === 1 ? ' day' : ' days') + ' a month. ' + A.does); }
+    renderAll(); save();
+  },
+  banner(a, S) { const b = BANNERS.find((x) => x.id === a); receipt(b.name + (S.banners[a] != null ? ' (earned ' + bannerYear(S.banners[a]) + '). ' : ': ') + b.how); },
+  planPick(a, S) { if (commitPlan(S, a)) { beep('good'); closeModal(); save(); receipt(PILLAR_BY[a].name + ' is in the strategic plan. It appears on the Overview tab.'); showPending(); } },
+  hall() { showModal('hall', null, { dismiss: true }); },
+  copyRecord(a, S) {
+    const el = $('share'), done = () => receipt('Copied.');
+    try { if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(el.value).then(done, () => { el.select(); receipt('Select the text and copy it.'); }); else { el.select(); if (document.execCommand('copy')) done(); } } catch (e) { el.select(); receipt('Select the text and copy it.'); }
+  },
   pd(a, S) { S.pd = clamp(S.pd + +a, 0, 4); receipt('Professional growth: ' + money(S.pd * 900 * S.costIdx) + ' per teacher, ' + money(S.pd * 900 * S.costIdx * sum(S.fac)) + ' a year in all.'); renderAll(); },
   prog(a, S) {
     const p = a.split(','), P = PROGRAM_BY[p[0]], before = S.prog[p[0]];
@@ -105,7 +130,7 @@ const ACT = {
   tipOk() { App.ui.seen[App.tab] = 1; saveUI(); renderPanel(); },
   tourOff() { App.ui.tourOff = true; saveUI(); renderPanel(); },
   tourOn() { App.ui.tourOff = false; App.ui.tour = {}; App.ui.mapHint = false; saveUI(); App.tab = 'desk'; closeModal(); },
-  tourGo(a) { if (a === 'people') ACT.tab('people'); else if (a === 'enroll') ACT.tab('admissions'); else if (a === 'why') ACT.drivers('sat'); else if (a === 'play') ACT.speed(1); else { App.ui.mapHint = false; renderMapChrome(); receipt('Click any neighborhood name on the map.'); } },
+  tourGo(a) { if (a === 'time') { const b = $('panel').querySelector('[data-act="time"]'); if (b) b.scrollIntoView({ block: 'center' }); receipt('Use \u2212 and + to move your days. All ten are yours to spend.'); } else if (a === 'people') ACT.tab('people'); else if (a === 'enroll') ACT.tab('admissions'); else if (a === 'why') ACT.drivers('sat'); else if (a === 'play') ACT.speed(1); else { App.ui.mapHint = false; renderMapChrome(); receipt('Click any neighborhood name on the map.'); } },
   okGo(a, S) { const p = a.split(','); clearPending(S, p[0]); closeModal(); save(); showPending(); if (!App.modal) ACT.tab(p[1]); },
   drivers(a) { tourMark('why'); showModal('drivers', a, { dismiss: true }); },
   help() { showModal('help', null, { dismiss: true }); },
@@ -254,6 +279,7 @@ function autoPlay(weeks) {
       else if (p.type === 'admit') commitAdmissions(S, defaultAdmit(S), Math.min(maxAid(S), defaultAid(S)));
       else if (p.type === 'review') ackReview(S, false);
       else if (p.type === 'event') resolveEvent(S, p.id, 0);
+      else if (p.type === 'plan') commitPlan(S, p.opts[0]);
       else clearPending(S, p.type);
     }
     if (tick(S)) weeks--;
@@ -270,7 +296,7 @@ function boot(data) {
   if (window.MutationObserver) new MutationObserver(applyTheme).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
   const q = new URLSearchParams(location.search);
   if (q.get('theme')) { document.documentElement.setAttribute('data-theme', q.get('theme')); App.dark = isDark(); App.map.night = App.dark; }
-  if (data && data.S && data.S.v === 1) { App.map.resize(); startGame(data.S); }
+  if (data && data.S && data.S.v === 1) { App.map.resize(); startGame(migrate(data.S)); }
   else if (q.get('auto')) {
     { const st = document.createElement('style'); st.textContent = '*{animation:none!important}'; document.head.appendChild(st); }
     const seed = +(q.get('seed') || 7);
@@ -279,6 +305,10 @@ function boot(data) {
     if (q.get('ff')) { clearPending(App.S, 'intro'); closeModal(); autoPlay(+q.get('ff')); }
     if (q.get('build')) for (const t of q.get('build').split(',')) { App.S.campaignFund += 2e7; startBuild(App.S, t, 'cash'); if (q.get('done')) { App.S.builds.forEach((b) => (b.left = 1)); autoPlay(1); } }
     if (q.get('ev')) queueEvent(App.S, q.get('ev'));
+    if (q.get('pillars')) for (const id of q.get('pillars').split(',')) commitPlan(App.S, id);
+    if (q.get('plan')) App.S.pending.push({ type: 'plan', block: true, opts: PILLARS.filter((p) => !App.S.plan.includes(p.id)).slice(+q.get('plan') - 1, +q.get('plan') + 2).map((p) => p.id) });
+    if (q.get('ban')) BANNERS.slice(0, +q.get('ban')).forEach((b, k) => (App.S.banners[b.id] = App.S.week - k * 30));
+    if (q.get('days')) q.get('days').split(',').forEach((d, k) => { App.S.time[TIME_AREAS[k].id] = +d; App.S.timeE[TIME_AREAS[k].id] = timeCurve(+d) * 0.6; });
     if (q.get('over')) endGame(App.S, q.get('over'));
     if (q.get('fresh')) App.ui = { seen: {}, tour: {}, tourOff: false, mapHint: false };
     if (q.get('seen')) { App.ui.tourOff = true; App.ui.mapHint = true; TABS.forEach((t) => (App.ui.seen[t[0]] = 1)); }
@@ -288,6 +318,7 @@ function boot(data) {
     if (q.get('nb')) App.card = { type: 'nb', id: +q.get('nb') };
     if (q.get('speed')) App.speed = +q.get('speed');
     renderAll();
+    if (q.get('test') && typeof runUiTest === 'function') { runUiTest(); requestAnimationFrame(frame); return; }
     if (q.get('show')) { const k = q.get('show'); if (k === 'help' || k === 'drivers' || k === 'cands' || k === 'build' || k === 'menu' || k === 'year') showModal(k, q.get('arg'), { dismiss: true }); else { App.modal = null; $('modal').innerHTML = ''; showPending(); } }
   } else openSetup();
   if (window.claude && window.claude.hot && window.claude.hot.snapshot) window.claude.hot.snapshot(() => ({ S: App.setup ? null : App.S }));

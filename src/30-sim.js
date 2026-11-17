@@ -39,6 +39,14 @@ function addMod(S, k, v, w, label) { S.mods.push({ k, v, w, w0: w, label }); }
 function modTerms(S, k, terms) { for (const m of S.mods) if (m.k === k) terms.push({ label: m.label, v: m.v * Math.min(1, m.w / (m.w0 * 0.5)), temp: true }); }
 const termSum = (t) => clamp(sum(t.map((x) => x.v)), 0, 100);
 
+/* Strategic plan pillars and the head's own calendar. Both feed the formulas below through these small readers. */
+function pSum(S, k) { let v = 0; for (const id of S.plan || []) v += PILLAR_BY[id].fx[k] || 0; return v; }
+function pillarTerms(S, k, t) { for (const id of S.plan || []) { const p = PILLAR_BY[id]; if (p.fx[k]) t.push({ label: p.name, v: p.fx[k] }); } }
+const timeCurve = (d) => (d >= 2 ? 1.25 * Math.sqrt(d - 2) : d === 1 ? -1.2 : -2.6);
+const te = (S, k) => (S.timeE && S.timeE[k]) || 0;
+const timeFree = (S) => TIME_DAYS - sum(Object.values(S.time));
+function setTime(S, k, delta) { if ((delta > 0 && timeFree(S) < delta) || S.time[k] + delta < 0) return false; S.time[k] += delta; return true; }
+
 /* ---------- the four things everything else follows from ---------- */
 const PW = { acad: 3, stem: 1.5, arts: 1.2, ath: 0.8, well: 1.2, coll: 0.8 };
 function progScore(S, d) {
@@ -59,6 +67,7 @@ function eqTerms(S, d) {
   if (p < 50) t.push({ label: 'Students who need more support', v: -(50 - p) * 0.5 * (1 - S.prog.well / 5) });
   const fill = divStudents(S, d) / Math.max(1, capacity(S, d));
   if (fill > 1) t.push({ label: 'Overcrowding', v: -(fill - 1) * 60 });
+  pillarTerms(S, 'eq', t);
   modTerms(S, 'eq', t);
   return t;
 }
@@ -80,6 +89,8 @@ function moraleTerms(S) {
   if (has(S, 'housing')) t.push({ label: 'Faculty housing', v: 5 });
   if (m.morale) t.push({ label: 'Mission fit', v: m.morale });
   if (S.prog.aux >= 4) t.push({ label: 'Campus never rests (auxiliary)', v: -2 });
+  if (Math.abs(te(S, 'faculty')) > 0.05) t.push({ label: 'Your time in classrooms', v: 2.2 * te(S, 'faculty') });
+  pillarTerms(S, 'morale', t);
   modTerms(S, 'morale', t);
   return t;
 }
@@ -93,12 +104,16 @@ function satTerms(S) {
     { label: 'Student life (arts, athletics, wellness)', v: (S.prog.arts + S.prog.ath + S.prog.well) / 15 * 12 },
     { label: 'Campus', v: (avgCond(S) - 60) * 0.15 + (has(S, 'dining') ? 3 : 0) + (has(S, 'turf') ? 1 : 0) },
     { label: 'Tuition increase of ' + S.lastTuitionPct + '%', v: -Math.max(0, S.lastTuitionPct - S.infl * 100 - 1.5) * 2.2 },
-    { label: 'College results', v: (S.college - 55) * 0.12 * (m.outcomeSat || 1) },
+    { label: 'College results', v: (S.college - 55) * 0.12 * (m.outcomeSat || 1) * (1 + pSum(S, 'outcome')) },
     { label: ds ? 'Dean of Students' : 'No Dean of Students', v: ds ? ds : -2 },
   ];
   let over = 0; for (let d = 0; d < 3; d++) over = Math.max(over, divStudents(S, d) / Math.max(1, capacity(S, d)) - 1);
   if (over > 0) t.push({ label: 'Overcrowding', v: -over * 80 });
   if (S.builds.length) t.push({ label: 'Construction noise', v: -Math.min(2, S.builds.length) });
+  if (Math.abs(te(S, 'families')) > 0.05) t.push({ label: 'Your time with families', v: 1.8 * te(S, 'families') });
+  pillarTerms(S, 'sat', t);
+  if (pSum(S, 'satNeed') && S.prog.well < 3) t.push({ label: 'Students from abroad need more support', v: pSum(S, 'satNeed') });
+  if (S.flags.chair === 'parent') t.push({ label: 'A parent chairs the board', v: 1.5 });
   modTerms(S, 'sat', t);
   return t;
 }
@@ -114,7 +129,8 @@ function repTerms(S) {
   ];
   if (sigCount(S)) t.push({ label: 'Signature buildings', v: 2.5 * sigCount(S) });
   if (sigP) t.push({ label: 'Signature programs', v: Math.min(8, 2 * sigP) });
-  if (has(S, 'solar')) t.push({ label: 'Green campus', v: 1 });
+  if (has(S, 'solar')) t.push({ label: 'Solar and geothermal', v: 1 });
+  pillarTerms(S, 'rep', t);
   modTerms(S, 'rep', t);
   return t;
 }
@@ -128,7 +144,7 @@ function auxNet(S, st, ci) {
   const lvl = S.prog.aux; let v = lvl * (32000 + 90 * st) * ci * (1 + 0.04 * sk(S, 'business'));
   if (lvl >= 1) v += ((has(S, 'arts') ? 40000 : 0) + (has(S, 'fieldhouse') ? 60000 : 0) + (has(S, 'dining') ? 30000 : 0) + (has(S, 'turf') ? 50000 : 0)) * ci;
   if (has(S, 'elc')) v += 150000 * ci;
-  return v;
+  return v * (1 + pSum(S, 'aux'));
 }
 function enrolledWealth(S) {
   let a = 0, n = 0; S.nbE.forEach((v, k) => { a += v * S.city.nbs[k].inc; n += v; });
@@ -136,15 +152,16 @@ function enrolledWealth(S) {
 }
 function fundAnnual(S, ignoreCampaign) {
   const st = students(S), fam = st / 1.55, m = mission(S), adv = sk(S, 'advancement');
-  const part = clamp(0.34 + (S.sat - 50) * 0.008 + adv * 0.03 + (m.part || 0), 0.12, 0.95);
+  const part = fundParticipation(S);
   const gift = 1700 * Math.pow(enrolledWealth(S), 1.3) * S.costIdx * (1 + 0.25 * S.city.econ);
   const trustees = (100000 + 300 * st) * S.costIdx * (0.6 + S.board / 150);
   const alumni = S.alumni * 0.07 * (190 + 25 * S.prog.ath) * S.costIdx * (0.7 + S.rep / 160);
-  let t = (fam * part * gift + trustees + alumni) * (0.7 + 0.14 * adv) * (1 + modSum(S, 'giving') / 100);
+  let t = (fam * part * gift + trustees + alumni) * (0.7 + 0.14 * adv) * (1 + modSum(S, 'giving') / 100) * (1 + pSum(S, 'giving')) * (1 + 0.045 * te(S, 'donors')) * (S.flags.chair === 'alum' ? 1.06 : 1);
   if (S.campaign && !ignoreCampaign) t *= 0.86;
   return t;
 }
-function fundParticipation(S) { return clamp(0.34 + (S.sat - 50) * 0.008 + sk(S, 'advancement') * 0.03 + (mission(S).part || 0), 0.12, 0.95); }
+function fundParticipation(S) { return clamp(0.34 + (S.sat - 50) * 0.008 + sk(S, 'advancement') * 0.03 + (mission(S).part || 0) + pSum(S, 'part'), 0.12, 0.95); }
+const busCost = (S) => 85000 * S.costIdx * S.drift * (1 + pSum(S, 'bus'));
 function teamCost(S) { let v = 0; for (const r of ROLES) if (S.team[r.id]) v += S.team[r.id].salary * 1.25; return v; }
 
 /* Annualized budget at today's settings. Overrides let the budget meeting look a year ahead. */
@@ -157,14 +174,15 @@ function budget(S, o) {
   const facN = sum(S.fac);
   let program = 0; for (const p of PROGRAMS) if (!p.revenue) program += progCost(S, p.id, S.prog[p.id], st, ci);
   let upkeep = 0; for (const b of S.bld) upkeep += bValue(S, b) * cm * S.drift * 0.017;
-  upkeep *= (has(S, 'solar') ? 0.88 : 1) * eff;
+  upkeep *= (has(S, 'solar') ? 0.88 : 1) * eff * (1 + pSum(S, 'upkeep'));
+  const lean = 1 + pSum(S, 'admin');
   const exp = {
-    faculty: facN * S.mktSalary * S.salaryIdx * sm * 1.27 + S.pd * 900 * facN * ci,
-    admin: (S.overhead + 2100 * st) * ci * eff + teamCost(S) * sm,
+    faculty: facN * S.mktSalary * S.salaryIdx * sm * 1.27 + (S.pd * 900 + pSum(S, 'perFac')) * facN * ci,
+    admin: (S.overhead + 2100 * st) * ci * eff * lean + teamCost(S) * sm,
     program,
     facilities: upkeep + plantValue(S) * cm * S.maint,
-    outreach: S.marketing + S.bus.length * 85000 * ci,
-    other: (240000 + 850 * st) * ci * eff + (S.flags.rink ? 150000 * ci : 0),
+    outreach: S.marketing + S.bus.length * busCost(S) * cm,
+    other: (240000 + 850 * st) * ci * eff * lean + (pSum(S, 'cost') + (S.flags.rink ? 150000 : 0) + (S.flags.remit ? 85000 : 0)) * ci,
     debt: S.debt * S.debtRate + S.debt / 22 + (S.cash < 0 ? -S.cash * 0.08 : 0),
   };
   const revT = rev.tuition + rev.aid + rev.fund + rev.draw + rev.aux, expT = sum(Object.values(exp));
@@ -177,7 +195,7 @@ function projNet(S) {
   return ytdNet(S) + (b.revT - b.rev.fund - b.expT) / WPY * left + fundLeft;
 }
 function borrowLimit(S) { return Math.max(0, 1.1 * budget(S).revT - S.debt); }
-function borrowRate(S) { return clamp(0.047 - 0.012 * S.city.econ - 0.001 * sk(S, 'business') + (S.cash < 0 ? 0.01 : 0), 0.03, 0.085); }
+function borrowRate(S) { return clamp(0.047 - 0.012 * S.city.econ - 0.001 * sk(S, 'business') + (S.cash < 0 ? 0.01 : 0) - (S.flags.chair === 'bank' ? 0.004 : 0), 0.03, 0.085); }
 function cashMonths(S) { return S.cash / (budget(S).expT / 12); }
 const creditLine = (S) => 0.08 * budget(S).expT;
 
@@ -192,7 +210,7 @@ function nbCalc(S, n, d) {
   fit += 0.03 * (S.prog.arts + S.prog.ath - 4);
   for (const k of ['acad', 'stem', 'arts', 'ath']) if (S.prog[k] >= 5) fit += 0.08;
   const dist = nb.dist * (S.bus.includes(n) ? 0.45 : 1);
-  const uY = K.you + K.rep * (S.rep - 50) / 10 + fit - beta * (m.beta || 1) * S.tuition[d] / (1e4 * ci) - K.dist * dist;
+  const uY = K.you + K.rep * (S.rep - 50) / 10 + fit - beta * (m.beta || 1) * (1 + pSum(S, 'beta')) * S.tuition[d] / (1e4 * ci) - K.dist * dist;
   let eR = 0; const parts = [];
   for (const r of S.city.rivals) {
     if (!r.open || (r.k8 && d === 2)) continue;
@@ -208,11 +226,12 @@ function consider(S, nb) { return 0.42 * sig((nb.inc / S.costIdx - 105) / 32) * 
 /* Expected applications per year from one neighborhood to one division: [full pay, needing aid]. */
 function appsRate(S, n, d) {
   const nb = S.city.nbs[n], c = nbCalc(S, n, d), m = mission(S);
-  const adm = 0.9 + 0.05 * sk(S, 'admissions'), buzz = 1 + modSum(S, 'apps') / 100, ef = [1.0, 0.42, 0.55][d];
-  let fp = nb.kids * consider(S, nb) * c.share * nb.aware * ef * adm * buzz * K.apps;
+  const adm = (0.9 + 0.05 * sk(S, 'admissions')) * (1 + 0.035 * te(S, 'admissions')), buzz = 1 + modSum(S, 'apps') / 100, ef = [1.0, 0.42, 0.55][d];
+  let fp = nb.kids * consider(S, nb) * c.share * nb.aware * ef * adm * buzz * K.apps * (1 + pSum(S, 'apps'));
+  for (const id of S.plan || []) { const p = PILLAR_BY[id]; if (p.nbTypes && p.nbTypes.includes(nb.type)) fp *= 1 + p.fx.nbApps; }
   if (d === 0 && has(S, 'elc')) fp *= 1.25;
   const q = 0.055 * (1 - sig((nb.inc / S.costIdx - 105) / 32)), dist = nb.dist * (S.bus.includes(n) ? 0.45 : 1);
-  let aid = nb.kids * q * nb.aware * ef * adm * buzz * (0.45 + 2.75 * discountRate(S)) * Math.exp(K.rep * 0.7 * (S.rep - 50) / 10 - 0.04 * dist) * (m.aidApps || 1) * K.aidApps;
+  let aid = nb.kids * q * nb.aware * ef * adm * buzz * (0.45 + 2.75 * discountRate(S)) * Math.exp(K.rep * 0.7 * (S.rep - 50) / 10 - 0.04 * dist) * (m.aidApps || 1) * K.aidApps * (1 + pSum(S, 'aidApps'));
   if (S.city.charter) aid *= 0.8;
   return [fp, aid];
 }
@@ -221,7 +240,7 @@ function awareTarget(S, n) {
   const foc = S.focus.length ? (S.focus.includes(n) ? 1.9 : 0.55) : 1;
   const mk = 0.35 * (1 - Math.exp(-S.marketing / (220000 * S.costIdx))) * foc * (0.9 + 0.05 * sk(S, 'admissions'));
   const wom = Math.min(0.25, S.nbE[n] / (nb.kids * 13) * 6);
-  return clamp(0.2 + 0.3 * S.rep / 100 + mk + (S.bus.includes(n) ? 0.08 : 0) + wom, 0.08, 1);
+  return clamp(0.2 + 0.3 * S.rep / 100 + mk + (S.bus.includes(n) ? 0.08 : 0) + wom + pSum(S, 'aware'), 0.08, 1);
 }
 /* What the map card shows: of families who would consider private school, where do they land? */
 function nbMarket(S, n) {
@@ -260,7 +279,9 @@ function newGame(o) {
     ytd: blankYtd(), years: [], hist: { students: [], cash: [], endow: [], rep: [], sat: [], morale: [], board: [], eq: [] },
     log: [], pending: [], goals: [], flags: { surplusYears: 0 }, evLast: {}, nextEvent: 5, campaign: null, lastCampaignEnd: -999,
     facLeaving: 0, lastApps: 150, lastYield: 0.6, lastAdmitRate: 0.75, prevOpen: 0, lastFund: 0,
+    time: {}, timeE: {}, plan: [], banners: {}, follow: [],
   };
+  for (const a of TIME_AREAS) { S.time[a.id] = 2; S.timeE[a.id] = 0; }
   for (const t of ['ls', 'main', 'us', 'gym']) S.bld.push({ t, cond: clamp(sc.cond + rr(S, -6, 6), 20, 100), slot: -1 });
   S.grades = BASE_GRADES.map((n) => { const k = Math.round(n * sc.scale); return { n: k, q: 50 + (sc.rep - 50) * 0.3, aid: k * sc.aid, an: k * sc.aid / 0.6 }; });
   S.city = makeCity(S);
@@ -274,7 +295,7 @@ function newGame(o) {
   const ws2 = sum(S.nbE); S.nbE = S.nbE.map((x) => st * x / ws2);
   S.adm = blankAdm(S);
   S.prevOpen = st; S.lastFund = fundAnnual(S);
-  S.start = { students: st, worth: S.cash + S.endow - S.debt, rep: S.rep };
+  S.start = { students: st, worth: S.cash + S.endow - S.debt, rep: S.rep, endow: S.endow };
   S.start.fracs = {}; legacy(S).parts.forEach((p) => (S.start.fracs[p.name] = p.frac));
   { const b0 = budget(S); S.expect = areaScores(S, { growth: 0, margin: b0.net / b0.revT, net: b0.net, fundG: 0, endG: 0, fund: b0.rev.fund }).map((a) => clamp(a.score - 2, 45, 80)); }
   rollCands(S);
@@ -286,7 +307,7 @@ function newGame(o) {
 
 /* ---------- player actions ---------- */
 function hireQuality(S) {
-  return clamp(45 + (S.salaryIdx - 0.85) * 100 + (S.rep - 50) * 0.2 + sk(S, 'academic') * 1.5 + (has(S, 'housing') ? 3 : 0) + rn(S, 0, 3), 25, 96);
+  return clamp(45 + (S.salaryIdx - 0.85) * 100 + (S.rep - 50) * 0.2 + sk(S, 'academic') * 1.5 + (has(S, 'housing') ? 3 : 0) + pSum(S, 'hire') + (S.flags.remit ? 2 : 0) + rn(S, 0, 3), 25, 96);
 }
 function setFac(S, d, delta) {
   const N = sum(S.fac), w = wk(S), mid = w > 7 && w < 44;
@@ -324,7 +345,7 @@ function canBuild(S, t) {
   if (B.replaces && S.builds.some((b) => b.t === t)) return 'Already underway';
   return null;
 }
-const buildCost = (S, t) => BUILDINGS[t].cost * S.costIdx;
+const buildCost = (S, t) => BUILDINGS[t].cost * S.costIdx * (S.flags.land && (t === 'housing' || t === 'turf') ? 0.6 : 1);
 /* Campaign money is used first. The rest comes from cash or a new bond. */
 function startBuild(S, t, mode) {
   if (canBuild(S, t)) return false;
@@ -387,15 +408,18 @@ function buildPool(S) {
       for (let k = 0; k < 2; k++) {
         const cnt = S.adm.acc[n][d][k], N = Math.floor(cnt) + (rnd(S) < cnt % 1 ? 1 : 0);
         for (let x = 0; x < N; x++) {
-          const q = clamp(rn(S, 50 + 0.3 * (S.rep - 50) + 0.03 * (nb.inc / S.costIdx - 110) + (k ? 3 : 0), 13), 5, 99);
+          const q = clamp(rn(S, 50 + 0.3 * (S.rep - 50) + 0.03 * (nb.inc / S.costIdx - 110) + (k ? 3 : 0) + pSum(S, 'q'), 13), 5, 99);
           let need = 0;
           if (k) need = clamp(rn(S, clamp(1 - nb.inc * 1000 * 0.105 / S.tuition[d], 0.15, 0.9), 0.16), 0.1, 0.95);
-          const y = clamp(K.yield + 0.5 * c.priv + 0.012 * sk(S, 'admissions') - 0.0025 * (q - 50) + (k ? 0.2 + (m.id === 'access' ? 0.05 : 0) : 0) + (d === 0 && has(S, 'elc') ? 0.06 : 0), 0.12, 0.93);
+          const y = clamp(K.yield + 0.5 * c.priv + 0.012 * sk(S, 'admissions') - 0.0025 * (q - 50) + (k ? 0.2 + (m.id === 'access' ? 0.05 : 0) + pSum(S, 'aidYield') : 0) + (d === 0 && has(S, 'elc') ? 0.06 : 0) + 0.008 * te(S, 'admissions'), 0.12, 0.93);
           pool.push({ n, d, g: pickGrade(S, d), q, need, y });
         }
       }
     }
   }
+  /* Students from abroad (Global Campus): full pay, Upper School, counted with the neighborhood nearest campus. */
+  const home = S.city.nbs.findIndex((nb) => nb.type === 'south');
+  for (let x = 0, N = Math.round(pSum(S, 'intl') * rr(S, 0.75, 1.25)); x < N; x++) pool.push({ n: home, d: 2, g: pickGrade(S, 2), q: clamp(rn(S, 56, 11), 5, 99), need: 0, y: 0.72 });
   pool.sort((a, b) => b.q - a.q);
   S.adm.pool = pool; S.adm.apps = pool.length; S.adm.stage = 2;
 }
@@ -452,7 +476,8 @@ function doRetention(S) {
   for (let g = 0; g < 12; g++) {
     let p = g === 5 ? 0.86 : g === 8 ? 0.84 : g >= 9 ? 0.945 : 0.925;
     p += 0.0024 * (S.sat - 58) - 0.007 * Math.max(0, S.next.tuitionPct - S.infl * 100 - 1) + 0.025 * S.city.econ * (m.econSwing || 1)
-      + 0.004 * (S.prog.well - 2) + 0.003 * sk(S, 'students') + (m.ret || 0) + (g >= 8 ? 0.004 * (S.prog.ath - 2) : 0) + modSum(S, 'ret') / 100;
+      + 0.004 * (S.prog.well - 2) + 0.003 * sk(S, 'students') + (m.ret || 0) + (g >= 8 ? 0.004 * (S.prog.ath - 2) : 0) + modSum(S, 'ret') / 100
+      + pSum(S, 'ret') + (g === 5 || g === 8 ? pSum(S, 'trans') : 0);
     const k = binom(S, S.grades[g].n, clamp(p, 0.55, 0.975));
     ret.push(k); stay += k; base += S.grades[g].n;
   }
@@ -464,16 +489,19 @@ function doRetention(S) {
 /* ---------- the year's fixed moments ---------- */
 function clearPending(S, type) { S.pending = S.pending.filter((p) => p.type !== type); }
 function minRaise(S) { return S.flags.union ? Math.ceil(S.infl * 200) / 2 : 0; }
+/* The Tuition Promise caps increases; otherwise the ceiling is 10%. */
+function maxTuition(S) { const cap = pSum(S, 'tuitionCap'); return cap ? Math.max(0, Math.floor((S.infl * 100 + cap) * 2) / 2) : 10; }
 function commitBudget(S, tp, rp) {
-  rp = Math.max(rp, minRaise(S));
+  rp = Math.max(rp, minRaise(S)); tp = Math.min(tp, maxTuition(S));
   if (S.flags.payPromise) {
     if (yr(S) >= S.flags.payPromise || S.salaryIdx >= 1) S.flags.payPromise = 0;
     else if (rp < S.infl * 100 + 1) { addMod(S, 'morale', -10, 90, 'Broken pay promise'); S.flags.payPromise = 0; log(S, 'The faculty notice that the promised raises did not come.', 'bad'); }
   }
   S.next = { tuitionPct: tp, raisePct: rp }; S.lastTuitionPct = tp; S.lastRaisePct = rp;
   const p = projectNext(S, tp, rp);
-  if (p.b.net < -0.03 * p.b.revT) { S.board = clamp(S.board - 2, 0, 100); log(S, 'The finance committee approves a deficit budget, reluctantly.', 'bad'); }
+  if (p.b.net < -0.03 * p.b.revT) { S.board = clamp(S.board - (S.flags.chair === 'bank' ? 4 : 2), 0, 100); log(S, 'The finance committee approves a deficit budget, reluctantly.', 'bad'); }
   if (tp > 7) S.board = clamp(S.board - 1, 0, 100);
+  if (tp > 5 && S.flags.chair === 'parent') { S.board = clamp(S.board - 2, 0, 100); log(S, 'The board chair hears about the tuition increase from other parents before she hears it from you.', 'bad'); }
   log(S, 'Budget set for next year: tuition +' + tp + '%, salary pool +' + rp + '%.', 'info');
   clearPending(S, 'budget');
 }
@@ -494,6 +522,7 @@ function openingDay(S) {
     const G = S.grades[g]; G.q = (G.q * G.n + (profileAvg(S) - 4)) / (G.n + 1); G.n++; late++;
   }
   const n = students(S), prev = S.prevOpen;
+  if (n >= 0.95 * totalCapacity(S)) S.flags.fullHouse = true;
   S.pending.push({ type: 'opening', block: true, n, prev, melt, late });
   log(S, 'Opening Day: ' + n + ' students (' + (n >= prev ? '+' : '−') + Math.abs(n - prev) + ').', n >= prev ? 'good' : 'bad', 'opening');
   S.prevOpen = n;
@@ -509,7 +538,7 @@ function facultySeason(S) {
     S.fq = fq; oneoff(S, -3000 * S.costIdx * leave);
     log(S, leave + ' teachers are leaving this year. Replacements hired (quality ' + Math.round(q) + ').', leave / N > 0.16 ? 'bad' : 'info');
   }
-  S.fq = clamp(S.fq + 0.4 + S.pd * 0.55 + sk(S, 'academic') * 0.18, 20, 96);
+  S.fq = clamp(S.fq + 0.4 + S.pd * 0.55 + sk(S, 'academic') * 0.18 + pSum(S, 'fq') + 0.12 * te(S, 'faculty'), 20, 96);
   S.facLeaving = leave;
 }
 function graduation(S) {
@@ -546,7 +575,10 @@ function yearEnd(S) {
   areas.forEach((a, i) => { a.expect = S.expect[i]; delta += clamp((a.score - S.expect[i]) / 6, -4, 3); S.expect[i] += (78 - S.expect[i]) * (S.expect[i] < 78 ? 0.22 : 0.1); });
 
   delta *= 0.8;
+  if (S.flags.chair === 'alum' && !S.team.advancement) delta -= 2;
   S.flags.surplusYears = net >= 0 ? S.flags.surplusYears + 1 : 0;
+  if (net >= 0 && S.flags.recession && S.week - S.flags.recession < 60) S.flags.storm = true;
+  if (areas.every((a) => a.score >= 90)) S.flags.honor = true;
   const goalNotes = [];
   for (const g of S.goals) {
     if (g.done || g.failed) continue;
@@ -564,13 +596,71 @@ function yearEnd(S) {
   S.lastFund = S.ytd.fund || S.lastFund;
   S.review = { y, areas, delta: S.board - before, board: S.board, net, goalNotes, contract, verdict, retire: y >= 9 };
   S.pending.push({ type: 'review', block: true });
+  checkBanners(S);
+  S.review.banners = BANNERS.filter((b) => S.banners[b.id] != null && S.banners[b.id] > S.week - WPY).map((b) => b.id);
 }
 function ackReview(S, retire) {
   clearPending(S, 'review');
   if (S.review.verdict === 'ended') return endGame(S, 'nonrenewal');
   if (retire) return endGame(S, 'retired');
   if (S.goals.every((g) => g.done || g.failed)) newGoals(S);
+  /* A strategic plan after the first year, then a new pillar with each renewed contract. */
+  if (S.review.y === 0 || S.review.verdict === 'renewed') {
+    const pool = PILLARS.filter((p) => !S.plan.includes(p.id)).map((p) => p.id), opts = [];
+    while (opts.length < 3 && pool.length) opts.push(pool.splice(Math.floor(rnd(S) * pool.length), 1)[0]);
+    if (opts.length) S.pending.push({ type: 'plan', block: true, opts });
+  }
 }
+function commitPlan(S, id) {
+  const p = PILLAR_BY[id]; if (!p || S.plan.includes(id)) return false;
+  S.plan.push(id); if (p.fx.once) oneoff(S, -p.fx.once * S.costIdx);
+  log(S, 'The board adopts a strategic plan pillar: ' + p.name + '.', 'good');
+  clearPending(S, 'plan'); return true;
+}
+
+/* ---------- banners for the gym ---------- */
+const BANNERS = [
+  { id: 'full', name: 'Full House', how: 'Open the year with 95% of seats filled.', test: (S) => S.flags.fullHouse },
+  { id: 'black', name: 'In the Black', how: 'Finish three straight years with a surplus.', test: (S) => S.flags.surplusYears >= 3 },
+  { id: 'pay', name: 'Market Pay', how: 'Bring faculty pay to 100% of market.', test: (S) => S.salaryIdx >= 1 },
+  { id: 'rep', name: 'Talk of the Town', how: 'Reach a reputation of 70.', test: (S) => S.rep >= 70 },
+  { id: 'first', name: 'First Choice', how: 'Hold a higher reputation than every competitor.', test: (S) => S.city.rivals.every((r) => !r.open || S.rep > r.rep) },
+  { id: 'teach', name: 'Master Teachers', how: 'Reach a teaching quality of 80.', test: (S) => EQavg(S) >= 80 },
+  { id: 'select', name: 'Hard to Get Into', how: 'Admit fewer than half of your applicants with 90% of seats filled.', test: (S) => yr(S) >= 1 && S.lastAdmitRate < 0.5 && students(S) >= 0.9 * totalCapacity(S) },
+  { id: 'stay', name: 'They Stay', how: 'See 94% of families re-enroll.', test: (S) => S.lastRetention >= 0.94 },
+  { id: 'doors', name: 'Open Doors', how: 'Have 30% of students on financial aid.', test: (S) => aidShare(S) >= 0.3 },
+  { id: 'city', name: 'The Whole City', how: 'Enroll at least 15 students from every neighborhood.', test: (S) => S.nbE.every((v) => v >= 15) },
+  { id: 'sig', name: 'Signature Campus', how: 'Open all four signature buildings.', test: (S) => sigCount(S) >= 4 },
+  { id: 'endow', name: 'Twice the Endowment', how: 'Double the endowment you inherited, after inflation.', test: (S) => S.endow / S.costIdx >= 2 * S.start.endow },
+  { id: 'debt', name: 'Mortgage Burned', how: 'Pay off every dollar of debt.', test: (S) => S.debt < 1 },
+  { id: 'camp', name: 'Over the Top', how: 'Close a capital campaign above its goal.', test: (S) => S.flags.campOver },
+  { id: 'storm', name: 'Weathered the Storm', how: 'Finish a recession year with a surplus.', test: (S) => S.flags.storm },
+  { id: 'honor', name: 'Honor Roll', how: 'Earn a report card with nothing below an A−.', test: (S) => S.flags.honor },
+];
+function checkBanners(S) {
+  for (const b of BANNERS) if (S.banners[b.id] == null && b.test(S)) { S.banners[b.id] = S.week; log(S, 'A new banner for the gym: ' + b.name + '.', 'good', 'ribbon'); }
+}
+const bannerCount = (S) => Object.keys(S.banners || {}).length;
+const perkText = (S, s) => s.replace(/\{\$(\d+)(t?)\}/g, (m, v, t) => money(+v * S.costIdx * (t ? sum(S.fac) : 1)));
+/* Fills in anything a school saved by an earlier build of the game does not have. */
+function migrate(S) {
+  if (!S.time) { S.time = {}; S.timeE = {}; for (const a of TIME_AREAS) { S.time[a.id] = 2; S.timeE[a.id] = 0; } }
+  S.plan = S.plan || []; S.banners = S.banners || {}; S.follow = S.follow || [];
+  if (S.start && S.start.endow == null) S.start.endow = S.endow / S.costIdx;
+  return S;
+}
+/* What the head's days in one place are doing right now, in words. */
+function timeNote(S, k) {
+  const e = te(S, k), tgt = timeCurve(S.time[k]), sg = (v, d) => (v >= 0 ? '+' : '\u2212') + Math.abs(v).toFixed(d);
+  const F = { faculty: ['Faculty morale ', 2.2, 1, ''], families: ['Family satisfaction ', 1.8, 1, ''], donors: ['Giving ', 4.5, 0, '%'], admissions: ['Applications ', 3.5, 0, '%'], board: ['Board confidence ', 0.012 * WPY, 1, ' a year'] }[k];
+  const val = (v) => sg(F[1] * v, F[2]) + F[3];
+  if (Math.abs(e) < 0.08 && Math.abs(tgt) < 0.08) return 'The two days people expect. No effect either way.';
+  return F[0] + val(e) + (Math.abs(tgt - e) > 0.15 ? ', heading to ' + val(tgt) : '');
+}
+
+/* Queues a dilemma to arrive some weeks from now (follow-ups to earlier choices). */
+function later(S, id, weeks) { S.follow.push({ id, at: S.week + weeks }); }
+
 function endGame(S, why) { if (S.over) return; S.over = { why, week: S.week, legacy: legacy(S) }; S.pending = [{ type: 'over', block: true }]; }
 
 function rollYear(S) {
@@ -705,7 +795,7 @@ function tick(S) {
     k.raised += d; S.campaignFund += d; oneoff(S, -k.goal * 0.05 / k.total);
     if (k.left <= 0) {
       const ok = k.raised >= k.goal * 0.98;
-      if (ok) { S.board = clamp(S.board + 7, 0, 100); addMod(S, 'rep', 2, 96, 'Successful campaign'); log(S, 'The campaign closes at ' + money(k.raised) + ', over its ' + money(k.goal) + ' goal.', 'good', 'ribbon'); }
+      if (ok) { S.flags.campOver = true; S.board = clamp(S.board + 7, 0, 100); addMod(S, 'rep', 2, 96, 'Successful campaign'); log(S, 'The campaign closes at ' + money(k.raised) + ', over its ' + money(k.goal) + ' goal.', 'good', 'ribbon'); }
       else { const short = k.raised < k.goal * 0.8; S.board = clamp(S.board - (short ? 8 : 3), 0, 100); log(S, 'The campaign closes at ' + money(k.raised) + ', short of its ' + money(k.goal) + ' goal.', 'bad'); }
       S.campaign = null; S.lastCampaignEnd = S.week;
     }
@@ -718,7 +808,10 @@ function tick(S) {
   for (const m of S.mods) m.w--;
   S.mods = S.mods.filter((m) => m.w > 0);
   const dc = (-4 + (S.maint / 0.015) * 4) / WPY;
-  for (const q of S.bld) q.cond = clamp(q.cond + dc - (S.prog.aux >= 4 ? 0.01 : 0), 5, 100);
+  const wear = pSum(S, 'wear') / WPY;
+  for (const q of S.bld) q.cond = clamp(q.cond + dc - (S.prog.aux >= 4 ? 0.01 : 0) - wear, 5, 100);
+  for (const a of TIME_AREAS) S.timeE[a.id] += (timeCurve(S.time[a.id]) - S.timeE[a.id]) * 0.07;
+  S.board = clamp(S.board + 0.012 * te(S, 'board'), 0, 100);
   c.nbs.forEach((nb, n) => (nb.aware += (awareTarget(S, n) - nb.aware) * 0.03));
   if (S.drawRate > 0.055) S.board = clamp(S.board - (S.drawRate - 0.055) * 8, 0, 100);
 
@@ -740,10 +833,14 @@ function tick(S) {
   else if (w === 47) yearEnd(S);
 
   /* dilemmas */
-  if (S.week >= S.nextEvent && ![5, 6, 25, 26, 33, 34, 37, 38, 46, 47].includes(w) && !S.pending.length) {
-    const ev = pickEvent(S);
-    if (ev) queueEvent(S, ev.id);
-    S.nextEvent = S.week + ri(S, 7, 11);
+  if (![5, 6, 25, 26, 33, 34, 37, 38, 46, 47].includes(w) && !S.pending.length) {
+    const due = S.follow.findIndex((f) => S.week >= f.at);
+    if (due >= 0) queueEvent(S, S.follow.splice(due, 1)[0].id);
+    else if (S.week >= S.nextEvent) {
+      const ev = pickEvent(S);
+      if (ev) queueEvent(S, ev.id);
+      S.nextEvent = S.week + ri(S, 7, 11);
+    }
   }
 
   /* trouble */
@@ -759,6 +856,7 @@ function tick(S) {
   if (students(S) < 110) endGame(S, 'closed');
 
   if (w % 4 === 0) {
+    checkBanners(S);
     const h = S.hist; h.students.push(students(S)); h.cash.push(S.cash); h.endow.push(S.endow); h.rep.push(S.rep); h.sat.push(S.sat); h.morale.push(S.morale); h.board.push(S.board); h.eq.push(EQavg(S));
     for (const k in h) if (h[k].length > 240) h[k].shift();
   }
@@ -789,6 +887,8 @@ function alerts(S) {
   if (!S.campaign && !canCampaign(S) && S.team.advancement && yr(S) >= 1) add(0, 'Donors are rested. A capital campaign is possible.', 'giving');
   if (S.campaignFund > 500000) add(0, money(S.campaignFund) + ' of campaign money is waiting to be used.', 'campus');
   if (w >= 8 && w < 30 && S.marketing < 60000 * S.costIdx) add(0, 'Admission season is open and marketing is nearly dark.', 'admissions');
+  if (timeFree(S) > 0) add(0, timeFree(S) + (timeFree(S) === 1 ? ' day' : ' days') + ' a month on your calendar ' + (timeFree(S) === 1 ? 'is' : 'are') + ' unassigned.', 'desk');
+  for (const a of TIME_AREAS) if (S.time[a.id] === 0) add(1, 'You are spending no time ' + a.name.toLowerCase() + '. People notice an absent head.', 'desk');
   a.sort((x, y) => y.sev - x.sev);
   return a;
 }
