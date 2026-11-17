@@ -748,8 +748,9 @@ function rivalMoves(S) {
   }
   if (!c.charter && y >= 3 && rnd(S) < 0.22) {
     c.charter = true; const home = c.nbs.find((n) => n.type === 'working');
-    c.rivals.push({ id: 'charter', name: 'Meridian Charter Academy', nb: home.id, ci: home.ci + 2, cj: home.cj - 2, north: false, tuition: 0, rep: 52, rep0: 52, bias: -1.1, k8: false, open: true, blurb: 'Free, new and oversubscribed. Draws families who would have needed aid.' });
-    log(S, 'Meridian Charter Academy opens in ' + home.name + '. It is free, and it is good.', 'city');
+    const cname = rivalName(S.seed, 7, 'charter', [S.name.toLowerCase()].concat(c.rivals.map((r) => r.name.toLowerCase())))[0];
+    c.rivals.push({ id: 'charter', name: cname, nb: home.id, ci: home.ci + 2, cj: home.cj - 2, north: false, tuition: 0, rep: 52, rep0: 52, bias: -1.1, k8: false, open: true, blurb: 'Free, new and oversubscribed. Draws families who would have needed aid.' });
+    log(S, cname + ' opens in ' + home.name + '. It is free, and it is good.', 'city');
   }
   const x = rnd(S);
   if (x < 0.12) { const nb = pick(S, c.nbs.filter((n) => n.tech)); nb.growth += 0.012; nb.incTrend += 0.008; log(S, 'A software company is moving its headquarters to ' + nb.name + '. Young families will follow.', 'city'); }

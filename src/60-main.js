@@ -49,7 +49,7 @@ function applyTheme() {
 }
 
 /* ---------- setup ---------- */
-function randomName(seed) { const st = SCHOOL_STEMS[Math.floor(hash(seed, 1, 3) * SCHOOL_STEMS.length)], f = SCHOOL_FORMS[Math.floor(hash(seed, 2, 3) * SCHOOL_FORMS.length)]; return f.replace('{}', st); }
+const randomName = (seed) => schoolName(seed);
 function previewGame() {
   const s = App.setup;
   App.S = newGame({ seed: s.seed, name: s.name || 'Your School', colors: s.colors, emblem: s.emblem, motto: s.motto, mission: s.mission, scenario: s.scenario });

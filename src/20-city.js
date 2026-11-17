@@ -41,6 +41,32 @@ function cityLayout(seed) {
   return (_layouts[seed] = { G, type, nb, centroid, seed });
 }
 
+/* ---------- names ---------- */
+const pickH = (arr, seed, a, b) => arr[Math.floor(hash(seed, a, b) * arr.length)];
+/* An invented place name from two parts. Skips joins that read badly (Ashhurst, Woodwood) and stems known as real institutions. */
+function nameStem(seed, k) {
+  for (let t = 0; t < 80; t++) {
+    const a = pickH(NAME_PRE, seed, k * 97 + t, 61), b = pickH(NAME_SUF, seed, k * 97 + t, 62), al = a.toLowerCase();
+    if (al[al.length - 1] === b[0] || al.endsWith(b) || b.indexOf(al) === 0 || (/ly$|ld$/.test(al) && b[0] === 'l') || (/th$/.test(al) && b.indexOf('th') >= 0) || (NAME_SOFT.includes(a) && NAME_SOFT_NO.includes(b)) || NAME_SKIP.includes(a + b)) continue;
+    return a + b;
+  }
+  return 'Hawthorne';
+}
+/* A name for the player's school. Any seed gives a name; the same seed gives the same one. */
+function schoolName(seed) { return pickH(SCHOOL_FORMS, seed, 2, 3).replace('{}', nameStem(seed, 1)); }
+/* A competitor's name in the style of its kind. `avoid` lists lower-case text already in use in this city (the player's
+   school name and the other competitors' key words), so no two schools share a word that matters. Returns [name, key]. */
+function rivalName(seed, k, kind, avoid) {
+  const R = RIVAL_NAMES[kind]; let name = '', key = '';
+  for (let t = 0; t < 120; t++) {
+    const s = k * 131 + t, form = pickH(R.forms, seed, s, 71), m = /\{(\w?)\}/.exec(form);
+    key = m[1] ? pickH(R[m[1]], seed, s, 72) : R.keys ? pickH(R.keys, seed, s, 73) : nameStem(seed, 40 + s);
+    name = form.replace(m[0], key);
+    if (!avoid.some((w) => w.indexOf(key.toLowerCase()) >= 0)) break;
+  }
+  return [name, key.toLowerCase()];
+}
+
 /* Rolls the living part of the city that the sim tracks and saves. */
 function makeCity(S) {
   const L = cityLayout(S.seed);
@@ -55,10 +81,12 @@ function makeCity(S) {
     };
   });
   nbs.forEach((n) => (n.pq0 = n.pq));
+  const used = [String(S.name || '').toLowerCase()];
   const rivals = RIVAL_DEFS.map((r, k) => {
-    const home = nbs.find((n) => n.type === r.home);
+    const home = nbs.find((n) => n.type === r.home), nm = rivalName(S.seed, k, r.id, used);
+    used.push(nm[1]);
     return {
-      id: r.id, name: r.names[Math.floor(hash(S.seed, k, 31) * r.names.length)], nb: home.id, ci: home.ci, cj: home.cj, north: home.north,
+      id: r.id, name: nm[0], nb: home.id, ci: home.ci, cj: home.cj, north: home.north,
       tuition: 24000 * r.price, rep: r.rep + rr(S, -2, 2), rep0: r.rep, bias: r.bias, k8: !!r.k8, open: true, blurb: r.blurb,
     };
   });

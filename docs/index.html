@@ -560,8 +560,25 @@ const ROLE_BY = {}; ROLES.forEach((r) => (ROLE_BY[r.id] = r));
 
 const FIRST_NAMES = ['Amara', 'Daniel', 'Priya', 'Marcus', 'Elena', 'Tomás', 'Grace', 'Kwame', 'Hannah', 'Luis', 'Mei', 'Jonah', 'Fatima', 'Owen', 'Nadia', 'Theo', 'Ines', 'Caleb', 'Ruth', 'Desmond', 'Sofia', 'Wyatt', 'Anika', 'Malik', 'Clara', 'Hiro', 'Leah', 'Andre', 'Beatrix', 'Samir'];
 const LAST_NAMES = ['Okafor', 'Whitfield', 'Raman', 'Castellanos', 'Lindqvist', 'Abernathy', 'Nakamura', 'Delacroix', 'Mbeki', 'Halloran', 'Ferreira', 'Stroud', 'Kowalczyk', 'Bhatt', 'Ellery', 'Vance', 'Oyelaran', 'Prescott', 'Zhou', 'Maddox', 'Thibault', 'Greer', 'Ansari', 'Holloway', 'Petrov', 'Quill', 'Marchetti', 'Dunmore', 'Iyer', 'Calloway'];
-const SCHOOL_STEMS = ['Hawthorne', 'Ashcombe', 'Marlowe', 'Linden', 'Thornfield', 'Brightwater', 'Wrenfield', 'Stonebridge', 'Larkspur', 'Fenwick', 'Oakhaven', 'Alderbrook', 'Kingsley', 'Summit Ridge'];
-const SCHOOL_FORMS = ['{} Academy', '{} Day School', 'The {} School', '{} Country Day', '{} Hall'];
+/* School names are generated, never picked from a fixed list. A stem is two parts joined (Thornfield, Wrenhurst, Kingsmere);
+   the generator in 20-city.js rejects awkward joins and anything in NAME_SKIP (stems famous as real institutions). */
+const NAME_PRE = ['Alder', 'Ash', 'Birch', 'Black', 'Bright', 'Brook', 'Cedar', 'Clare', 'Cold', 'Dun', 'Elm', 'Fair', 'Fen', 'Glen', 'Gray', 'Had', 'Haw', 'Hazel', 'High', 'Holly',
+  'Kings', 'Lark', 'Laurel', 'Lin', 'Long', 'Mar', 'Mer', 'Mill', 'North', 'Oak', 'Pem', 'Red', 'Rock', 'Rose', 'Rowan', 'Shel', 'Stan', 'Stone', 'Summer', 'Thorn', 'West', 'Whit', 'Wild', 'Win', 'Wood', 'Wren'];
+const NAME_SUF = ['brook', 'bury', 'combe', 'croft', 'dale', 'field', 'ford', 'gate', 'grove', 'haven', 'hurst', 'leigh', 'ley', 'mere', 'mont', 'moor', 'more', 'ridge', 'stead', 'thorne', 'ton', 'vale', 'well', 'wick', 'wood', 'worth'];
+/* Short, sound-only prefixes (Pem, Mar, Lin) only read well with the plainer endings. */
+const NAME_SOFT = ['Dun', 'Had', 'Haw', 'Lin', 'Mar', 'Mer', 'Pem', 'Shel', 'Stan', 'Win'], NAME_SOFT_NO = ['thorne', 'stead', 'gate', 'haven', 'grove', 'vale', 'well', 'ridge', 'dale', 'mont'];
+const NAME_SKIP = ['Stanford', 'Claremont', 'Northfield', 'Kingswood', 'Millbrook', 'Thornton', 'Fairfield', 'Westfield', 'Linfield', 'Whitworth', 'Ashford', 'Redford', 'Longwood', 'Rockford', 'Kingston', 'Stanton', 'Westmont', 'Clareton', 'Hollywood'];
+const SCHOOL_FORMS = ['{} Academy', '{} Day School', 'The {} School', '{} Country Day', '{} Hall', '{} School', '{} Collegiate'];
+/* Competitors are named in the style of their kind. In a form, {} is a generated stem or one of `keys`; {s}, {h} and {o} draw from the lists beside them. */
+const RIVAL_NAMES = {
+  elite: { forms: ['{} Hall', 'The {} School', '{} Academy', '{} Preparatory School', 'St. {s}\u2019s School'], s: ['Crispin', 'Alban', 'Dunstan', 'Swithin', 'Oswald', 'Edmund', 'Aldhelm', 'Cuthbert', 'Wilfrid', 'Aidan', 'Hilda', 'Columba'] },
+  prog: { forms: ['{} Day School', '{} School', 'The {} School', '{} Community School'],
+    keys: ['Riverbend', 'Canopy', 'Willow Bank', 'Meadowlark', 'Open Sky', 'Greenleaf', 'Juniper', 'Wildflower', 'Tidewater', 'Sycamore', 'Blue Heron', 'Fernbrook', 'Clearwater', 'Hilltop', 'Orchard', 'Lantern', 'Sparrow', 'Thistle', 'Sunrise', 'Cricket Hollow', 'Tall Pines', 'Stepping Stone', 'Windmill', 'Otter Creek'] },
+  parish: { forms: ['St. {s} Parish School', 'St. {s} School', 'Holy {h} Parish School', 'Our Lady of {o} School', 'St. {s} Academy'],
+    s: ['Brigid', 'Anselm', 'Monica', 'Jude', 'Bede', 'Agnes', 'Ambrose', 'Cecilia', 'Benedict', 'Martin', 'Gemma', 'Kevin', 'Malachy', 'Rita', 'Helena', 'Philomena', 'Lucy', 'Raphael', 'Dominic', 'Felicity'],
+    h: ['Cross', 'Family', 'Name', 'Rosary', 'Trinity', 'Redeemer', 'Angels'], o: ['Grace', 'Mercy', 'Peace', 'Victory', 'Hope', 'Lourdes'] },
+  charter: { forms: ['{} Charter Academy', '{} Charter School', '{} Collegiate Charter'], keys: ['Meridian', 'Keystone', 'Beacon', 'Pathway', 'Horizon', 'Compass', 'Frontier', 'Legacy', 'Unity', 'Northstar', 'Pioneer', 'Cornerstone', 'Bridgeway', 'Latitude'] },
+};
 const CITY_NAMES = ['Port Halloran', 'Marrow Creek', 'Eastmere', 'Calder Falls', 'Wexley', 'New Tamsin', 'Bellhaven', 'Corliss Bay', 'Tolland Ridge', 'Verity'];
 const MOTTOS = ['Lux et Labor', 'Learn by Doing', 'Mind, Hand, Heart', 'Veritas et Virtus', 'Non Sibi', 'Find a Way or Make One', 'Ask Better Questions'];
 const SCHOOL_COLORS = [
@@ -592,11 +609,11 @@ const NB_TYPES = [
     names: ['Old Northside', 'Trolley Park', 'Elm Circle'], blurb: 'Established families across the river. A long drive without a bus.' },
 ];
 const RIVAL_DEFS = [
-  { id: 'elite', names: ['Aldermoor Hall', 'St. Crispin’s School', 'The Pemberton School'], home: 'oldmoney', price: 1.22, rep: 71, bias: 0.2,
+  { id: 'elite', home: 'oldmoney', price: 1.22, rep: 71, bias: 0.2,
     blurb: 'Traditional, selective and expensive. The school everyone compares you to.' },
-  { id: 'prog', names: ['Riverbend Day School', 'Canopy School', 'Willow Bank School'], home: 'streetcar', price: 0.93, rep: 55, bias: 0,
+  { id: 'prog', home: 'streetcar', price: 0.93, rep: 55, bias: 0,
     blurb: 'Progressive and friendly. Competes on warmth and price.' },
-  { id: 'parish', names: ['St. Brigid Parish School', 'Holy Cross Parish School', 'St. Anselm School'], home: 'middle', price: 0.44, rep: 46, bias: 0, k8: true,
+  { id: 'parish', home: 'middle', price: 0.44, rep: 46, bias: 0, k8: true,
     blurb: 'K–8 only and half your price. Competes for cost-conscious families.' },
 ];
 
@@ -687,6 +704,32 @@ function cityLayout(seed) {
   return (_layouts[seed] = { G, type, nb, centroid, seed });
 }
 
+/* ---------- names ---------- */
+const pickH = (arr, seed, a, b) => arr[Math.floor(hash(seed, a, b) * arr.length)];
+/* An invented place name from two parts. Skips joins that read badly (Ashhurst, Woodwood) and stems known as real institutions. */
+function nameStem(seed, k) {
+  for (let t = 0; t < 80; t++) {
+    const a = pickH(NAME_PRE, seed, k * 97 + t, 61), b = pickH(NAME_SUF, seed, k * 97 + t, 62), al = a.toLowerCase();
+    if (al[al.length - 1] === b[0] || al.endsWith(b) || b.indexOf(al) === 0 || (/ly$|ld$/.test(al) && b[0] === 'l') || (/th$/.test(al) && b.indexOf('th') >= 0) || (NAME_SOFT.includes(a) && NAME_SOFT_NO.includes(b)) || NAME_SKIP.includes(a + b)) continue;
+    return a + b;
+  }
+  return 'Hawthorne';
+}
+/* A name for the player's school. Any seed gives a name; the same seed gives the same one. */
+function schoolName(seed) { return pickH(SCHOOL_FORMS, seed, 2, 3).replace('{}', nameStem(seed, 1)); }
+/* A competitor's name in the style of its kind. `avoid` lists lower-case text already in use in this city (the player's
+   school name and the other competitors' key words), so no two schools share a word that matters. Returns [name, key]. */
+function rivalName(seed, k, kind, avoid) {
+  const R = RIVAL_NAMES[kind]; let name = '', key = '';
+  for (let t = 0; t < 120; t++) {
+    const s = k * 131 + t, form = pickH(R.forms, seed, s, 71), m = /\{(\w?)\}/.exec(form);
+    key = m[1] ? pickH(R[m[1]], seed, s, 72) : R.keys ? pickH(R.keys, seed, s, 73) : nameStem(seed, 40 + s);
+    name = form.replace(m[0], key);
+    if (!avoid.some((w) => w.indexOf(key.toLowerCase()) >= 0)) break;
+  }
+  return [name, key.toLowerCase()];
+}
+
 /* Rolls the living part of the city that the sim tracks and saves. */
 function makeCity(S) {
   const L = cityLayout(S.seed);
@@ -701,10 +744,12 @@ function makeCity(S) {
     };
   });
   nbs.forEach((n) => (n.pq0 = n.pq));
+  const used = [String(S.name || '').toLowerCase()];
   const rivals = RIVAL_DEFS.map((r, k) => {
-    const home = nbs.find((n) => n.type === r.home);
+    const home = nbs.find((n) => n.type === r.home), nm = rivalName(S.seed, k, r.id, used);
+    used.push(nm[1]);
     return {
-      id: r.id, name: r.names[Math.floor(hash(S.seed, k, 31) * r.names.length)], nb: home.id, ci: home.ci, cj: home.cj, north: home.north,
+      id: r.id, name: nm[0], nb: home.id, ci: home.ci, cj: home.cj, north: home.north,
       tuition: 24000 * r.price, rep: r.rep + rr(S, -2, 2), rep0: r.rep, bias: r.bias, k8: !!r.k8, open: true, blurb: r.blurb,
     };
   });
@@ -1461,8 +1506,9 @@ function rivalMoves(S) {
   }
   if (!c.charter && y >= 3 && rnd(S) < 0.22) {
     c.charter = true; const home = c.nbs.find((n) => n.type === 'working');
-    c.rivals.push({ id: 'charter', name: 'Meridian Charter Academy', nb: home.id, ci: home.ci + 2, cj: home.cj - 2, north: false, tuition: 0, rep: 52, rep0: 52, bias: -1.1, k8: false, open: true, blurb: 'Free, new and oversubscribed. Draws families who would have needed aid.' });
-    log(S, 'Meridian Charter Academy opens in ' + home.name + '. It is free, and it is good.', 'city');
+    const cname = rivalName(S.seed, 7, 'charter', [S.name.toLowerCase()].concat(c.rivals.map((r) => r.name.toLowerCase())))[0];
+    c.rivals.push({ id: 'charter', name: cname, nb: home.id, ci: home.ci + 2, cj: home.cj - 2, north: false, tuition: 0, rep: 52, rep0: 52, bias: -1.1, k8: false, open: true, blurb: 'Free, new and oversubscribed. Draws families who would have needed aid.' });
+    log(S, cname + ' opens in ' + home.name + '. It is free, and it is good.', 'city');
   }
   const x = rnd(S);
   if (x < 0.12) { const nb = pick(S, c.nbs.filter((n) => n.tech)); nb.growth += 0.012; nb.incTrend += 0.008; log(S, 'A software company is moving its headquarters to ' + nb.name + '. Young families will follow.', 'city'); }
@@ -3156,6 +3202,7 @@ const MODALS = {
       '<div class="grid2"><div class="pick"><span class="lbl">School colors</span><div class="swatches">' + SCHOOL_COLORS.map((c, k) => '<button class="swatch" data-act="suColor" data-arg="' + k + '" aria-pressed="' + (s.colors[0] === c[0]) + '" aria-label="Colors ' + (k + 1) + '"><i style="background:' + c[0] + '"></i><i style="background:' + c[1] + '"></i></button>').join('') + '</div></div><div class="pick"><span class="lbl">Emblem</span><div class="swatches">' + EMBLEMS.map((e) => '<button class="emb" data-act="suEmblem" data-arg="' + e + '" aria-pressed="' + (s.emblem === e) + '" aria-label="' + e + '"><svg width="26" height="26" viewBox="8 12 24 26"><rect x="8" y="12" width="24" height="26" rx="4" fill="' + s.colors[0] + '"/>' + emblemSvg(e, s.colors[0]) + '</svg></button>').join('') + '</div></div></div>' +
       '<div class="pick"><span class="lbl">Mission</span><div class="opts">' + MISSIONS.map((m) => '<button class="opt" data-act="suMission" data-arg="' + m.id + '" aria-pressed="' + (s.mission === m.id) + '"><b>' + m.name + '</b><small>' + m.line + '</small><small>' + m.perks.map((p) => '• ' + p).join('<br>') + '</small></button>').join('') + '</div></div>' +
       '<div class="pick"><span class="lbl">Where you start</span><div class="opts">' + SCENARIOS.map((c) => '<button class="opt" data-act="suScenario" data-arg="' + c.id + '" aria-pressed="' + (s.scenario === c.id) + '"><em>' + c.level + '</em><b>' + c.name + '</b><small>' + c.line + '</small></button>').join('') + '</div></div>' +
+      '<p class="hint">The city is ' + esc(App.S.city.name) + '. Across town: ' + App.S.city.rivals.map((r) => esc(r.name)).join(', ') + '. <b>New city</b> draws a different map and different competitors.</p>' +
       '<div class="foot"><button class="btn" data-act="suCity">New city</button><button class="btn pri" data-act="suBegin">Accept the job</button></div>' +
       (hallLoad().length ? '<details><summary>Hall of Heads: your past schools</summary>' + hallHTML() + '</details>' : '');
   },
@@ -3234,7 +3281,7 @@ function applyTheme() {
 }
 
 /* ---------- setup ---------- */
-function randomName(seed) { const st = SCHOOL_STEMS[Math.floor(hash(seed, 1, 3) * SCHOOL_STEMS.length)], f = SCHOOL_FORMS[Math.floor(hash(seed, 2, 3) * SCHOOL_FORMS.length)]; return f.replace('{}', st); }
+const randomName = (seed) => schoolName(seed);
 function previewGame() {
   const s = App.setup;
   App.S = newGame({ seed: s.seed, name: s.name || 'Your School', colors: s.colors, emblem: s.emblem, motto: s.motto, mission: s.mission, scenario: s.scenario });

@@ -105,8 +105,25 @@ const ROLE_BY = {}; ROLES.forEach((r) => (ROLE_BY[r.id] = r));
 
 const FIRST_NAMES = ['Amara', 'Daniel', 'Priya', 'Marcus', 'Elena', 'Tomás', 'Grace', 'Kwame', 'Hannah', 'Luis', 'Mei', 'Jonah', 'Fatima', 'Owen', 'Nadia', 'Theo', 'Ines', 'Caleb', 'Ruth', 'Desmond', 'Sofia', 'Wyatt', 'Anika', 'Malik', 'Clara', 'Hiro', 'Leah', 'Andre', 'Beatrix', 'Samir'];
 const LAST_NAMES = ['Okafor', 'Whitfield', 'Raman', 'Castellanos', 'Lindqvist', 'Abernathy', 'Nakamura', 'Delacroix', 'Mbeki', 'Halloran', 'Ferreira', 'Stroud', 'Kowalczyk', 'Bhatt', 'Ellery', 'Vance', 'Oyelaran', 'Prescott', 'Zhou', 'Maddox', 'Thibault', 'Greer', 'Ansari', 'Holloway', 'Petrov', 'Quill', 'Marchetti', 'Dunmore', 'Iyer', 'Calloway'];
-const SCHOOL_STEMS = ['Hawthorne', 'Ashcombe', 'Marlowe', 'Linden', 'Thornfield', 'Brightwater', 'Wrenfield', 'Stonebridge', 'Larkspur', 'Fenwick', 'Oakhaven', 'Alderbrook', 'Kingsley', 'Summit Ridge'];
-const SCHOOL_FORMS = ['{} Academy', '{} Day School', 'The {} School', '{} Country Day', '{} Hall'];
+/* School names are generated, never picked from a fixed list. A stem is two parts joined (Thornfield, Wrenhurst, Kingsmere);
+   the generator in 20-city.js rejects awkward joins and anything in NAME_SKIP (stems famous as real institutions). */
+const NAME_PRE = ['Alder', 'Ash', 'Birch', 'Black', 'Bright', 'Brook', 'Cedar', 'Clare', 'Cold', 'Dun', 'Elm', 'Fair', 'Fen', 'Glen', 'Gray', 'Had', 'Haw', 'Hazel', 'High', 'Holly',
+  'Kings', 'Lark', 'Laurel', 'Lin', 'Long', 'Mar', 'Mer', 'Mill', 'North', 'Oak', 'Pem', 'Red', 'Rock', 'Rose', 'Rowan', 'Shel', 'Stan', 'Stone', 'Summer', 'Thorn', 'West', 'Whit', 'Wild', 'Win', 'Wood', 'Wren'];
+const NAME_SUF = ['brook', 'bury', 'combe', 'croft', 'dale', 'field', 'ford', 'gate', 'grove', 'haven', 'hurst', 'leigh', 'ley', 'mere', 'mont', 'moor', 'more', 'ridge', 'stead', 'thorne', 'ton', 'vale', 'well', 'wick', 'wood', 'worth'];
+/* Short, sound-only prefixes (Pem, Mar, Lin) only read well with the plainer endings. */
+const NAME_SOFT = ['Dun', 'Had', 'Haw', 'Lin', 'Mar', 'Mer', 'Pem', 'Shel', 'Stan', 'Win'], NAME_SOFT_NO = ['thorne', 'stead', 'gate', 'haven', 'grove', 'vale', 'well', 'ridge', 'dale', 'mont'];
+const NAME_SKIP = ['Stanford', 'Claremont', 'Northfield', 'Kingswood', 'Millbrook', 'Thornton', 'Fairfield', 'Westfield', 'Linfield', 'Whitworth', 'Ashford', 'Redford', 'Longwood', 'Rockford', 'Kingston', 'Stanton', 'Westmont', 'Clareton', 'Hollywood'];
+const SCHOOL_FORMS = ['{} Academy', '{} Day School', 'The {} School', '{} Country Day', '{} Hall', '{} School', '{} Collegiate'];
+/* Competitors are named in the style of their kind. In a form, {} is a generated stem or one of `keys`; {s}, {h} and {o} draw from the lists beside them. */
+const RIVAL_NAMES = {
+  elite: { forms: ['{} Hall', 'The {} School', '{} Academy', '{} Preparatory School', 'St. {s}\u2019s School'], s: ['Crispin', 'Alban', 'Dunstan', 'Swithin', 'Oswald', 'Edmund', 'Aldhelm', 'Cuthbert', 'Wilfrid', 'Aidan', 'Hilda', 'Columba'] },
+  prog: { forms: ['{} Day School', '{} School', 'The {} School', '{} Community School'],
+    keys: ['Riverbend', 'Canopy', 'Willow Bank', 'Meadowlark', 'Open Sky', 'Greenleaf', 'Juniper', 'Wildflower', 'Tidewater', 'Sycamore', 'Blue Heron', 'Fernbrook', 'Clearwater', 'Hilltop', 'Orchard', 'Lantern', 'Sparrow', 'Thistle', 'Sunrise', 'Cricket Hollow', 'Tall Pines', 'Stepping Stone', 'Windmill', 'Otter Creek'] },
+  parish: { forms: ['St. {s} Parish School', 'St. {s} School', 'Holy {h} Parish School', 'Our Lady of {o} School', 'St. {s} Academy'],
+    s: ['Brigid', 'Anselm', 'Monica', 'Jude', 'Bede', 'Agnes', 'Ambrose', 'Cecilia', 'Benedict', 'Martin', 'Gemma', 'Kevin', 'Malachy', 'Rita', 'Helena', 'Philomena', 'Lucy', 'Raphael', 'Dominic', 'Felicity'],
+    h: ['Cross', 'Family', 'Name', 'Rosary', 'Trinity', 'Redeemer', 'Angels'], o: ['Grace', 'Mercy', 'Peace', 'Victory', 'Hope', 'Lourdes'] },
+  charter: { forms: ['{} Charter Academy', '{} Charter School', '{} Collegiate Charter'], keys: ['Meridian', 'Keystone', 'Beacon', 'Pathway', 'Horizon', 'Compass', 'Frontier', 'Legacy', 'Unity', 'Northstar', 'Pioneer', 'Cornerstone', 'Bridgeway', 'Latitude'] },
+};
 const CITY_NAMES = ['Port Halloran', 'Marrow Creek', 'Eastmere', 'Calder Falls', 'Wexley', 'New Tamsin', 'Bellhaven', 'Corliss Bay', 'Tolland Ridge', 'Verity'];
 const MOTTOS = ['Lux et Labor', 'Learn by Doing', 'Mind, Hand, Heart', 'Veritas et Virtus', 'Non Sibi', 'Find a Way or Make One', 'Ask Better Questions'];
 const SCHOOL_COLORS = [
@@ -137,11 +154,11 @@ const NB_TYPES = [
     names: ['Old Northside', 'Trolley Park', 'Elm Circle'], blurb: 'Established families across the river. A long drive without a bus.' },
 ];
 const RIVAL_DEFS = [
-  { id: 'elite', names: ['Aldermoor Hall', 'St. Crispin’s School', 'The Pemberton School'], home: 'oldmoney', price: 1.22, rep: 71, bias: 0.2,
+  { id: 'elite', home: 'oldmoney', price: 1.22, rep: 71, bias: 0.2,
     blurb: 'Traditional, selective and expensive. The school everyone compares you to.' },
-  { id: 'prog', names: ['Riverbend Day School', 'Canopy School', 'Willow Bank School'], home: 'streetcar', price: 0.93, rep: 55, bias: 0,
+  { id: 'prog', home: 'streetcar', price: 0.93, rep: 55, bias: 0,
     blurb: 'Progressive and friendly. Competes on warmth and price.' },
-  { id: 'parish', names: ['St. Brigid Parish School', 'Holy Cross Parish School', 'St. Anselm School'], home: 'middle', price: 0.44, rep: 46, bias: 0, k8: true,
+  { id: 'parish', home: 'middle', price: 0.44, rep: 46, bias: 0, k8: true,
     blurb: 'K–8 only and half your price. Competes for cost-conscious families.' },
 ];
 
