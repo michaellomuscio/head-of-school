@@ -1,0 +1,10 @@
+const G = require('../dist/sim.cjs'); const { run } = require('./sim.js');
+const [pol='smart', years='3', seed='7', sc='turnaround'] = process.argv.slice(2);
+const S = run(pol, +years, +seed, sc, 'prep', true);
+const b = G.budget(S);
+const f = (o) => Object.entries(o).map(([k, v]) => k + ' ' + G.money(v)).join(', ');
+console.log('week', S.week, 'students', G.students(S), 'fac', S.fac.join('/'), 'ratio', (G.students(S) / G.sum(S.fac)).toFixed(1), 'over', S.over && S.over.why);
+console.log('rev', f(b.rev)); console.log('exp', f(b.exp)); console.log('net', G.money(b.net), 'ytd', f(S.ytd));
+console.log('team', G.ROLES.map((r) => r.id + ':' + (S.team[r.id] ? S.team[r.id].skill : '-')).join(' '), 'prog', JSON.stringify(S.prog), 'maint', S.maint, 'pd', S.pd, 'mkt', G.money(S.marketing), 'bus', S.bus.length);
+console.log('years', S.years.map((y) => G.money(y.net) + '/' + G.money(y.rev)).join('  '));
+console.log(S.log.slice(-25).map((l) => l.w + ': ' + l.text).join('\n'));

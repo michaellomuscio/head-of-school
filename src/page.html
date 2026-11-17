@@ -1,0 +1,378 @@
+<title>Head of School</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@500;600;700&family=Courier+Prime:wght@400;700&family=Graduate&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Doto:wght@700;900&display=swap">
+<style>
+/* Layout: a stadium scoreboard across the top, the city diorama on the left, the head's paperwork (index-tabbed) on the right; stacks on phones.
+   Look: athletic-department scoreboard plus printed school forms. Lit seven-segment numbers up top; ruled ledgers, index cards and rubber stamps below. */
+:root {
+  --paper: #f6f8fb; --card: #ffffff; --sunk: #e9edf3;
+  --ink: #1a2132; --ink2: #475167; --ink3: #77829a; --rule: #c3d0e3; --rule2: #dbe3ee; --margin: #e09a9a; --bd: #1a2132;
+  --school: #1f4e8c; --school2: #e3ac2f; --accent: #1f4e8c; --on-accent: #ffffff;
+  --good: #1b7850; --warn: #a56700; --bad: #be352d; --goodbg: #dcf1e6; --warnbg: #fbecc6; --badbg: #f9dcd9;
+  --board: #15181e; --board2: #1f242c; --board3: #2b313b; --board-ink: #eceff4; --board-ink2: #98a2b3; --board-line: #07090c;
+  --led: #ffb22e; --led-red: #ff5a4c; --led-green: #52e08c; --led-off: rgba(255, 178, 46, .1);
+  --note: #fff2a6; --note-ink: #3b3200; --tab-off: #343b47;
+  --shadow: 0 2px 0 rgba(20, 26, 40, .2), 0 16px 36px rgba(20, 26, 40, .22);
+  --varsity: 'Graduate', Rockwell, 'Roboto Slab', Georgia, serif;
+  --cond: 'Barlow Condensed', 'Arial Narrow', 'Helvetica Neue', Arial, sans-serif;
+  --body: 'Barlow', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --type: 'Courier Prime', 'Courier New', Courier, monospace;
+  --dot: 'Doto', 'Courier New', Courier, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --paper: #111a2b; --card: #18233a; --sunk: #0c1423;
+  --ink: #e9eef7; --ink2: #adb8cc; --ink3: #7b89a3; --rule: #2b3c5c; --rule2: #1f2c47; --margin: #70404c; --bd: #5b6b8a;
+  --good: #55cb98; --warn: #e9b655; --bad: #f3867c; --goodbg: #143627; --warnbg: #3a2e10; --badbg: #41211f;
+  --board: #0d0f13; --board2: #171b21; --board3: #232830; --note: #4a421a; --note-ink: #fff3b8; --tab-off: #1d232c;
+  --shadow: 0 2px 0 rgba(0, 0, 0, .5), 0 16px 38px rgba(0, 0, 0, .55); color-scheme: dark } }
+:root[data-theme="dark"] {
+  --paper: #111a2b; --card: #18233a; --sunk: #0c1423;
+  --ink: #e9eef7; --ink2: #adb8cc; --ink3: #7b89a3; --rule: #2b3c5c; --rule2: #1f2c47; --margin: #70404c; --bd: #5b6b8a;
+  --good: #55cb98; --warn: #e9b655; --bad: #f3867c; --goodbg: #143627; --warnbg: #3a2e10; --badbg: #41211f;
+  --board: #0d0f13; --board2: #171b21; --board3: #232830; --note: #4a421a; --note-ink: #fff3b8; --tab-off: #1d232c;
+  --shadow: 0 2px 0 rgba(0, 0, 0, .5), 0 16px 38px rgba(0, 0, 0, .55); color-scheme: dark }
+
+* { box-sizing: border-box }
+html, body { height: 100% }
+body { background: var(--board); color: var(--ink); font-family: var(--body); font-size: 14.5px; line-height: 1.45; overflow: hidden; -webkit-font-smoothing: antialiased }
+button { font: inherit; color: inherit; cursor: pointer; background: none; border: 0; padding: 0; text-align: inherit }
+button:focus-visible, input:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--led); outline-offset: 2px }
+h1, h2, h3, h4, p { margin: 0 }
+.num { font-family: var(--type); font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: 0; text-transform: none }
+.rows .num, .tbl .num { white-space: nowrap }
+.app { height: 100%; display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr) }
+
+/* ---------- the scoreboard ---------- */
+.top { position: relative; z-index: 5; min-width: 0; color: var(--board-ink);
+  background: var(--board) repeating-linear-gradient(90deg, rgba(255, 255, 255, .022) 0 1px, transparent 1px 5px);
+  border-bottom: 3px solid var(--board-line); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .08), inset 0 -1px 0 rgba(255, 255, 255, .05) }
+.top-in { display: flex; align-items: center; gap: 14px; padding: 9px max(16px, env(safe-area-inset-right, 0px)) 8px max(16px, env(safe-area-inset-left, 0px)) }
+.brand { display: flex; align-items: center; gap: 10px; min-width: 0; flex: 0 1 auto }
+.brand svg { flex: none; filter: drop-shadow(0 2px 0 rgba(0, 0, 0, .5)) }
+.brand-t { display: grid; min-width: 0; gap: 1px }
+.brand-t b { font-family: var(--varsity); font-weight: 400; font-size: 17px; letter-spacing: .03em; text-transform: uppercase; line-height: 1.1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+.brand-t i { font: 600 11.5px var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--board-ink2); white-space: nowrap }
+.cal { flex: 1 1 220px; min-width: 0; display: grid; gap: 4px }
+.cal-bar { display: grid; grid-template-columns: repeat(12, 1fr); gap: 3px }
+.cal-bar span { position: relative; height: 15px; border-radius: 2px; background: var(--board3); display: grid; place-items: center; font: 700 9.5px var(--cond); letter-spacing: .04em; color: #646d7c }
+.cal-bar .s-summer { --sc: #86dd5a } .cal-bar .s-fall { --sc: #ff9d2e } .cal-bar .s-winter { --sc: #7cc6ff } .cal-bar .s-spring { --sc: #ff8fb5 }
+.cal-bar span.past { background: color-mix(in srgb, var(--sc) 42%, var(--board3)); color: #0e1014 }
+.cal-bar span.now { background: var(--sc); color: #0e1014; box-shadow: 0 0 10px var(--sc) }
+.cal-bar span.mk::after { content: ""; position: absolute; top: -3px; right: 3px; width: 5px; height: 5px; background: #fff; transform: rotate(45deg); box-shadow: 0 0 4px rgba(255, 255, 255, .7) }
+.cal-next { justify-self: start; max-width: 100%; font: 900 12px var(--dot); letter-spacing: .05em; text-transform: uppercase; color: var(--led); text-shadow: 0 0 6px rgba(255, 178, 46, .55); white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+.cal-next b { font-weight: 900; color: #fff3d6 }
+.cal-next:hover { color: #ffd27a }
+.cal-next::after { content: " \203A" }
+.top-btns { display: flex; gap: 5px; flex: none }
+.speed { display: flex; gap: 4px; flex: none }
+.ib, .speed button { width: 38px; height: 34px; border-radius: 5px; display: grid; place-items: center; flex: none; color: var(--board-ink); font: 700 16px var(--cond);
+  background: linear-gradient(#3a414e, #262b34); border: 1px solid var(--board-line); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .16), 0 2px 0 #040506 }
+.ib:hover, .speed button:hover { background: linear-gradient(#485061, #2e343f) }
+.ib:active, .speed button:active { transform: translateY(2px); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .16) }
+.speed button[aria-pressed="true"] { background: linear-gradient(#ffcb62, #ee9710); color: #241600; box-shadow: inset 0 1px 0 rgba(255, 255, 255, .55), 0 0 14px rgba(255, 178, 46, .55), 0 2px 0 #040506 }
+.vitals { display: flex; gap: 8px; overflow-x: auto; padding: 0 max(16px, env(safe-area-inset-right, 0px)) 10px max(16px, env(safe-area-inset-left, 0px)); scrollbar-width: none }
+.vitals::-webkit-scrollbar { display: none }
+.vital { flex: 1 0 116px; min-width: 116px; display: grid; gap: 3px; padding: 6px 8px 7px; border-radius: 5px; background: var(--board2); border: 1px solid var(--board-line); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .07); transition: transform .12s }
+.vital:hover { transform: translateY(-1px); background: var(--board3) }
+.vital small { font: 700 10.5px var(--cond); letter-spacing: .14em; text-transform: uppercase; color: var(--board-ink); white-space: nowrap }
+.vital small::after { content: " \203A"; color: var(--board-ink2) }
+.vital .led { display: flex; align-items: center; height: 30px; padding: 0 7px; border-radius: 3px; background: #050709; box-shadow: inset 0 2px 5px #000, 0 1px 0 rgba(255, 255, 255, .07); color: var(--led); overflow: hidden }
+.vital em { font: 600 10.5px var(--cond); font-style: normal; letter-spacing: .07em; text-transform: uppercase; color: var(--board-ink2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+.vital em.up { color: var(--led-green) } .vital em.down { color: var(--led-red) }
+.ledsvg { display: block; height: 20px; width: auto; overflow: visible; filter: drop-shadow(0 0 3px currentColor) }
+.ledsvg .off { fill: var(--led-off) } .ledsvg .on { fill: currentColor } .ledsvg text { fill: currentColor; font: 700 15px var(--cond) }
+.bulbs { display: grid; grid-template-columns: repeat(10, 1fr); gap: 2px }
+.bulbs i { height: 4px; border-radius: 1px; background: #2a3039 }
+.bulbs i.on { background: var(--bc, var(--led)); box-shadow: 0 0 5px var(--bc, var(--led)) }
+.t-good { --bc: var(--led-green) } .t-warn { --bc: var(--led) } .t-bad { --bc: var(--led-red) }
+.vital.c-red .led { color: var(--led-red) } .vital.c-green .led { color: var(--led-green) }
+
+/* ---------- stage and map ---------- */
+.stage { display: grid; grid-template-columns: minmax(0, 1fr) minmax(380px, 450px); min-height: 0 }
+.mapwrap { position: relative; min-width: 0; min-height: 0; overflow: hidden; background: #9fc8e6 }
+#map { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; cursor: grab; display: block }
+#map.drag { cursor: grabbing }
+.map-tools { position: absolute; top: 10px; left: max(12px, env(safe-area-inset-left, 0px)); display: flex; gap: 6px; flex-wrap: wrap; align-items: flex-start; max-width: calc(100% - 70px) }
+.seg, .zoom { display: flex; background: var(--board); border: 1px solid var(--board-line); border-radius: 6px; padding: 3px; gap: 3px; box-shadow: 0 3px 0 rgba(0, 0, 0, .35), 0 8px 18px rgba(0, 0, 0, .25) }
+.seg button { padding: 5px 10px; border-radius: 4px; font: 700 12.5px var(--cond); letter-spacing: .08em; text-transform: uppercase; color: var(--board-ink2); white-space: nowrap }
+.seg button:hover { color: var(--board-ink) }
+.seg button[aria-pressed="true"] { background: var(--led); color: #241600; box-shadow: 0 0 10px rgba(255, 178, 46, .45) }
+.zoom { position: absolute; top: 10px; right: 12px; flex-direction: column }
+.zoom button { width: 34px; height: 32px; border-radius: 4px; display: grid; place-items: center; font: 700 19px var(--cond); color: var(--board-ink); background: var(--board3) }
+.zoom button:hover { background: #3b4350 }
+.zoom .only-phone { display: none }
+.maplegend { display: flex; align-items: center; gap: 7px; font: 700 11.5px var(--cond); letter-spacing: .08em; text-transform: uppercase; color: var(--board-ink); padding: 8px 10px; background: var(--board); border: 1px solid var(--board-line); border-radius: 6px; box-shadow: 0 3px 0 rgba(0, 0, 0, .35); white-space: nowrap }
+.maplegend i { display: block; width: 64px; height: 8px; border-radius: 1px; background: linear-gradient(90deg, var(--c0), var(--c1)) }
+.map-hint { flex-basis: 100%; max-width: 340px; padding: 8px 11px; border-radius: 2px; background: var(--note); color: var(--note-ink); font-size: 13px; line-height: 1.35; box-shadow: 2px 3px 0 rgba(0, 0, 0, .25); transform: rotate(-.6deg) }
+.paused { position: absolute; right: 12px; bottom: 44px; padding: 8px 14px; border-radius: 4px; background: var(--board); border: 1px solid var(--led); color: var(--led); font: 900 13px var(--dot); letter-spacing: .04em; text-transform: uppercase; text-shadow: 0 0 6px rgba(255, 178, 46, .6); box-shadow: 0 0 0 3px var(--board), 0 6px 18px rgba(0, 0, 0, .4); white-space: nowrap; display: flex; gap: 8px; align-items: center; max-width: calc(100% - 24px) }
+.paused svg { animation: blink 1.4s steps(2, jump-none) infinite }
+.paused:hover { background: #20252e }
+.ticker { position: absolute; left: 0; right: 0; bottom: 0; padding: 7px max(14px, env(safe-area-inset-right, 0px)) 6px max(14px, env(safe-area-inset-left, 0px)); background: #07090c; border-top: 2px solid #23282f; color: var(--led); font: 700 13px var(--dot); letter-spacing: .03em; text-shadow: 0 0 5px rgba(255, 178, 46, .45); white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+.ticker b { color: #8a6a2a; margin-right: 10px; font-weight: 900 }
+.card { position: absolute; left: max(12px, env(safe-area-inset-left, 0px)); bottom: 46px; width: min(350px, calc(100% - 24px)); background: var(--card); border: 2px solid var(--bd); border-radius: 3px; box-shadow: 5px 6px 0 rgba(0, 0, 0, .3); padding: 0 14px 14px; display: grid; gap: 10px; max-height: calc(100% - 104px); overflow-y: auto }
+.card h3 { font: 400 16px var(--varsity); letter-spacing: .03em; text-transform: uppercase; margin: 0 -14px; padding: 9px 42px 8px 14px; background: var(--school); color: #fff; border-bottom: 3px solid var(--school2) }
+.card .x, .modal .x { position: absolute; top: 5px; right: 6px; width: 28px; height: 28px; border-radius: 3px; display: grid; place-items: center; color: #fff; font-size: 20px; z-index: 2 }
+.card .x:hover, .modal .x:hover { background: rgba(255, 255, 255, .2) }
+.blurb { color: var(--ink2); font-size: 13.5px }
+.kv { display: grid; grid-template-columns: 1fr 1fr; gap: 0 14px }
+.kv div { display: grid; padding: 5px 0; border-bottom: 1px solid var(--rule) }
+.kv small, .lbl { font: 700 10.5px var(--cond); letter-spacing: .11em; text-transform: uppercase; color: var(--ink3) }
+.kv b { font-family: var(--type); font-weight: 700; font-size: 15px }
+.stack { display: flex; height: 14px; border: 1.5px solid var(--bd); background: var(--sunk) }
+.stack i { display: block; height: 100% }
+.legend { display: flex; flex-wrap: wrap; gap: 3px 12px; font-size: 12px; color: var(--ink2) }
+.legend span::before { content: ""; display: inline-block; width: 9px; height: 9px; background: var(--c); margin-right: 5px; border: 1px solid var(--bd) }
+
+/* ---------- the paperwork ---------- */
+.side { display: grid; grid-template-rows: auto minmax(0, 1fr); background: var(--paper); min-height: 0; min-width: 0; border-left: 3px solid var(--board-line) }
+.tabs { display: flex; gap: 3px; overflow-x: auto; padding: 8px 8px 0; background: var(--board); scrollbar-width: none }
+.tabs::-webkit-scrollbar { display: none }
+.tabs button { flex: 1 0 auto; display: grid; justify-items: center; gap: 1px; padding: 6px 8px 6px; position: relative; font: 700 11.5px var(--cond); letter-spacing: .07em; text-transform: uppercase; color: var(--board-ink2); background: var(--tab-off); border-radius: 7px 7px 0 0; border-top: 3px solid transparent }
+.tabs button:hover { color: var(--board-ink) }
+.tabs button[aria-selected="true"] { background: var(--paper); color: var(--ink); border-top-color: var(--school2) }
+.tabs button .dot { position: absolute; top: 1px; right: 3px; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 8px; background: var(--led-red); color: #fff; font: 700 10.5px/16px var(--cond); font-style: normal; text-align: center; box-shadow: 0 0 8px rgba(255, 90, 76, .7) }
+.tabs button .dot.s1 { min-width: 7px; width: 7px; height: 7px; padding: 0; top: 4px; right: 6px; background: var(--led); box-shadow: 0 0 6px rgba(255, 178, 46, .8) }
+.panel { overflow-y: auto; display: grid; gap: 20px; align-content: start; min-width: 0; padding: 16px max(18px, env(safe-area-inset-right, 0px)) 30px 38px;
+  background: linear-gradient(90deg, transparent 24px, var(--margin) 24px, var(--margin) 25.500px, transparent 25.500px) }
+.sec { display: grid; gap: 9px; min-width: 0 }
+.sec > h3 { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; font: 400 13.5px var(--varsity); letter-spacing: .06em; text-transform: uppercase; padding-bottom: 8px;
+  background: linear-gradient(var(--accent), var(--accent)) 0 100% / 100% 3px no-repeat, linear-gradient(var(--school2), var(--school2)) 0 calc(100% - 4.500px) / 100% 1.500px no-repeat }
+.sec > h3 small { font: 600 11.5px var(--cond); letter-spacing: .06em; color: var(--ink3); text-transform: uppercase; text-align: right }
+.hint { font-size: 13px; color: var(--ink2) }
+.big { font-family: var(--varsity); font-size: 30px; line-height: 1.1; letter-spacing: .01em }
+.row { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-width: 0 }
+.row > span:first-child { min-width: 0 }
+.rows { display: grid }
+.rows > * { padding: 7px 2px; border-bottom: 1px solid var(--rule) }
+.rows .tot { font: 700 13px var(--cond); letter-spacing: .1em; text-transform: uppercase; border-bottom: 2px solid var(--ink); padding-top: 11px }
+.neg { color: var(--bad) } .pos { color: var(--good) }
+.meter { display: block; height: 9px; flex: 1; min-width: 40px; --mc: var(--accent); background: repeating-linear-gradient(90deg, var(--rule) 0 5px, transparent 5px 7px) }
+.meter i { display: block; height: 100%; background: repeating-linear-gradient(90deg, var(--mc) 0 5px, transparent 5px 7px) }
+.meter.good { --mc: var(--good) } .meter.warn { --mc: var(--warn) } .meter.bad { --mc: var(--bad) }
+.alert { display: flex; gap: 10px; align-items: flex-start; width: 100%; padding: 8px 2px; border-bottom: 1px solid var(--rule); font-size: 13.5px }
+.alert::before { content: "!"; flex: none; width: 18px; height: 18px; margin-top: 1px; display: grid; place-items: center; font: 700 13px var(--cond); background: var(--ink3); color: var(--paper) }
+.alert.s2::before { background: var(--bad) } .alert.s1::before { background: var(--warn) } .alert.s0::before { content: "i" }
+.alert.s2 { font-weight: 600 }
+.alert:hover { background: var(--sunk) }
+.alert::after { content: "\203A"; margin-left: auto; padding-left: 8px; color: var(--ink3); font-size: 17px; line-height: 1.1 }
+.goal { display: grid; gap: 6px; padding: 9px 2px; border-bottom: 1px solid var(--rule) }
+.goal b { font-weight: 600 }
+.goal.failed { opacity: .55 }
+.tip { display: flex; gap: 10px; align-items: flex-start; justify-content: space-between; padding: 10px 12px; background: var(--note); color: var(--note-ink); font-size: 13px; line-height: 1.4; box-shadow: 2px 3px 0 rgba(0, 0, 0, .14); transform: rotate(-.4deg) }
+.lead-line { font-size: 13px; color: var(--ink2); margin-bottom: -8px }
+.lead-line b { font: 700 13px var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--ink) }
+.todo { display: flex; gap: 10px; align-items: center; width: 100%; font-size: 13.5px }
+.todo i { width: 16px; height: 16px; border: 2px solid var(--bd); flex: none; display: grid; place-items: center; font-style: normal; font-size: 12px; font-weight: 700; color: transparent; background: var(--card) }
+.todo.done { color: var(--ink3); text-decoration: line-through }
+.todo.done i { color: var(--good) }
+.todo:not(.done):hover { background: var(--sunk) }
+.when, .tag { display: inline-flex; align-items: center; padding: 1px 6px; border: 1.500px solid currentColor; border-radius: 2px; font: 700 10.5px var(--cond) !important; letter-spacing: .09em !important; text-transform: uppercase; color: var(--ink3); white-space: nowrap }
+.tag { font-size: 11.5px !important; color: var(--ink2) }
+.tag.good { color: var(--good) } .tag.bad { color: var(--bad) } .tag.warn { color: var(--warn) }
+.goal .tag.good, .gradebox .tag { transform: rotate(-3deg) }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 6px 12px 5px; border-radius: 4px; border: 2px solid var(--bd); background: var(--card); color: var(--ink); font: 700 13.5px var(--cond); letter-spacing: .07em; text-transform: uppercase; white-space: nowrap; box-shadow: 0 2px 0 var(--bd) }
+.btn:hover:not(:disabled) { background: var(--sunk) }
+.btn:active:not(:disabled) { transform: translateY(2px); box-shadow: none }
+.btn:disabled { opacity: .4; cursor: not-allowed; box-shadow: none }
+.btn.pri { background: var(--school); color: #fff; border-color: var(--bd) }
+.btn.pri:hover:not(:disabled) { background: var(--school); filter: brightness(1.15) }
+.btn.sm { padding: 3px 8px 2px; font-size: 12px; border-width: 1.500px; box-shadow: 0 1.500px 0 var(--bd) }
+.btn.on { background: var(--school2); color: #1a1400; border-color: var(--bd) }
+.btns { display: flex; flex-wrap: wrap; gap: 8px }
+.step { display: inline-flex; align-items: center; border: 2px solid var(--bd); border-radius: 4px; overflow: hidden; background: var(--card); flex: none; box-shadow: 0 2px 0 var(--bd) }
+.step button { width: 30px; height: 28px; display: grid; place-items: center; font: 700 18px var(--cond) }
+.step button:hover { background: var(--sunk) }
+.step b { min-width: 36px; text-align: center; font: 700 15px var(--type); border-left: 2px solid var(--bd); border-right: 2px solid var(--bd); align-self: stretch; display: grid; place-items: center; background: var(--paper) }
+.slider { display: grid; gap: 4px }
+.slide { display: flex; align-items: center; gap: 8px }
+.slide input { flex: 1; min-width: 0 }
+.nudge { width: 30px; height: 28px; border: 2px solid var(--bd); border-radius: 4px; background: var(--card); display: grid; place-items: center; font: 700 18px var(--cond); flex: none; box-shadow: 0 2px 0 var(--bd) }
+.nudge:hover { background: var(--sunk) } .nudge:active { transform: translateY(2px); box-shadow: none }
+input[type="range"] { width: 100%; accent-color: var(--accent); margin: 0; height: 22px }
+.pips { display: flex; gap: 4px; flex-wrap: wrap }
+.pips button { min-width: 30px; height: 28px; padding: 0 6px; border-radius: 3px; background: var(--card); border: 2px solid var(--bd); font: 400 13px var(--varsity); color: var(--ink2); display: grid; place-items: center }
+.pips button:hover { background: var(--sunk) }
+.pips button.on { background: var(--accent); color: var(--on-accent, #fff) }
+.pips button.off { font: 700 11.5px var(--cond); letter-spacing: .08em; text-transform: uppercase }
+.pips button.off.on { background: var(--ink3); color: var(--paper) }
+.pips button.lock { border-style: dashed; color: var(--ink3); background: transparent }
+.prog, .build, .person { display: grid; gap: 7px; padding: 10px 12px 11px; background: var(--card); border: 1px solid var(--rule); border-radius: 2px; box-shadow: 2px 3px 0 var(--rule2) }
+.prog > .row:first-child, .build > .row:first-child, .person > .row:first-child { padding-bottom: 6px; border-bottom: 1.500px solid var(--margin) }
+.prog h4, .build h4 { font: 700 15px var(--cond); letter-spacing: .06em; text-transform: uppercase }
+.terms { display: grid; font-size: 13px }
+.term { display: flex; justify-content: space-between; gap: 10px; padding: 4px 2px; border-bottom: 1px solid var(--rule) }
+.term b { font-family: var(--type) }
+.term.temp span::after { content: " (fading)"; color: var(--ink3) }
+details > summary { cursor: pointer; font: 700 12.5px var(--cond); letter-spacing: .08em; text-transform: uppercase; color: var(--ink2); padding: 2px 0 }
+.person.vacant { border-style: dashed; background: transparent; box-shadow: none }
+.who { display: flex; align-items: center; gap: 10px; min-width: 0 }
+.mono { width: 36px; height: 36px; flex: none; border-radius: 50%; background: var(--school); color: #fff; display: grid; place-items: center; font: 400 13px var(--varsity); border: 2px solid var(--school2) }
+.stars { color: var(--school2); letter-spacing: 1px; font-size: 14px; text-shadow: 0 0 1px rgba(0, 0, 0, .5) }
+.gbars { display: grid; grid-template-columns: repeat(13, 1fr); gap: 4px; align-items: end; height: 104px; padding-top: 6px; position: relative; border-bottom: 2px solid var(--ink) }
+.gbars div { height: 100%; position: relative }
+.gbars i { position: absolute; left: 0; right: 0; bottom: 0; background: repeating-linear-gradient(0deg, var(--accent) 0 4px, transparent 4px 5px) }
+.gbars i.d1 { background: repeating-linear-gradient(0deg, var(--school2) 0 4px, transparent 4px 5px) }
+.gbars i.d2 { background: repeating-linear-gradient(0deg, var(--ink2) 0 4px, transparent 4px 5px) }
+.gbars u { position: absolute; left: -2px; right: -2px; height: 0; border-top: 1.500px dashed var(--bad) }
+.gbars em { position: absolute; left: 0; right: 0; text-align: center; font: 700 11px var(--type); font-style: normal; color: var(--ink) }
+.glabels { display: grid; grid-template-columns: repeat(13, 1fr); gap: 4px; font: 700 11px var(--cond); color: var(--ink3); text-align: center }
+.funnel { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; border: 2px solid var(--bd); background: var(--card) }
+.funnel div { display: grid; gap: 1px; padding: 8px 4px 7px; text-align: center; border-left: 1px solid var(--rule) }
+.funnel div:first-child { border-left: 0 }
+.funnel b { font: 400 20px var(--varsity) }
+.tbl { width: 100%; border-collapse: collapse; font-size: 13px }
+.tbl th { text-align: left; font: 700 10.5px var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--ink3); padding: 4px 6px 4px 0; border-bottom: 2px solid var(--ink) }
+.tbl td { padding: 6px 6px 6px 0; border-bottom: 1px solid var(--rule); vertical-align: middle }
+.tbl td.r, .tbl th.r { text-align: right; font-family: var(--type); font-weight: 700; font-variant-numeric: tabular-nums }
+.tbl th.r { font: 700 10.5px var(--cond) }
+.tbl tr.sel td { background: var(--note); color: var(--note-ink) }
+.scroll-x { overflow-x: auto }
+.link { text-decoration: underline; text-decoration-color: var(--ink3); text-underline-offset: 3px; font-weight: 600 }
+.log { display: grid; font-size: 13px }
+.log div { display: grid; grid-template-columns: 58px 1fr; gap: 8px; padding: 5px 2px; border-bottom: 1px solid var(--rule) }
+.log time { font: 700 11px var(--cond); letter-spacing: .08em; text-transform: uppercase; color: var(--ink3); padding-top: 2px }
+.log .k-good { color: var(--good) } .log .k-bad { color: var(--bad) } .log .k-city { color: var(--ink2); font-style: italic }
+.spark { display: grid; gap: 1px; padding: 6px 2px 4px; border-top: 2px solid var(--ink); min-width: 0 }
+.spark > b { font-size: 17px }
+.spark svg { width: 100%; height: 34px; display: block }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 14px }
+.grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px 14px }
+
+/* ---------- memos, worksheets, report cards ---------- */
+.scrim { position: fixed; inset: 0; background: rgba(6, 9, 16, .62); display: grid; place-items: center; z-index: 20; padding: max(12px, env(safe-area-inset-top, 0px)) max(12px, env(safe-area-inset-right, 0px)) max(12px, env(safe-area-inset-bottom, 0px)) max(12px, env(safe-area-inset-left, 0px)); animation: fade .18s ease-out }
+.modal { position: relative; width: min(620px, 100%); max-height: 100%; overflow-y: auto; background: var(--paper); color: var(--ink); border: 2px solid var(--bd); border-radius: 3px; box-shadow: 7px 9px 0 rgba(0, 0, 0, .4); padding: 0 24px 22px; display: grid; gap: 14px; animation: rise .22s ease-out }
+.modal.wide { width: min(780px, 100%) }
+.modal:focus { outline: none }
+.modal > :first-child:not(.lh):not(.x) { margin-top: 22px }
+.lh { display: flex; align-items: center; gap: 10px; margin: 0 -24px; padding: 9px 46px 8px 24px; background: var(--school); color: #fff; border-bottom: 4px solid var(--school2); position: sticky; top: 0; z-index: 1 }
+.lh svg { flex: none }
+.lh b { font: 400 14.5px var(--varsity); letter-spacing: .05em; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+.lh i { margin-left: auto; font: italic 500 12.5px var(--body); opacity: .85; white-space: nowrap }
+.modal h2 { font: 400 25px/1.12 var(--varsity); letter-spacing: .015em; text-transform: uppercase; text-wrap: balance }
+.modal .eyebrow { font: 700 12px var(--cond); letter-spacing: .16em; text-transform: uppercase; color: var(--ink3) }
+.modal p { color: var(--ink2); font-size: 15px; line-height: 1.55; max-width: 64ch }
+.modal p.lead { color: var(--ink); font-size: 16px }
+.modal p.typed { font-family: var(--type); font-size: 15px; line-height: 1.5; color: var(--ink) }
+.choice { display: grid; gap: 6px; width: 100%; padding: 11px 13px 10px; border-radius: 3px; background: var(--card); border: 2px solid var(--bd); box-shadow: 0 3px 0 var(--bd); font-weight: 600; font-size: 14.5px }
+.choice:hover { background: var(--sunk) }
+.choice:active { transform: translateY(3px); box-shadow: none }
+.choice .tags { display: flex; flex-wrap: wrap; gap: 5px }
+.choice .note { font-weight: 400; font-size: 13px; color: var(--ink2) }
+.cmt { font-size: 13.5px; padding: 5px 10px; border-left: 4px solid var(--ink3); background: var(--card); color: var(--ink) }
+.cmt.bad { border-left-color: var(--bad) } .cmt.warn { border-left-color: var(--warn) } .cmt.good { border-left-color: var(--good) }
+.outcome { padding: 13px 15px; background: var(--card); border: 1px solid var(--rule); border-left: 5px solid var(--school2); color: var(--ink); font-size: 15px; line-height: 1.55 }
+.foot { display: flex; justify-content: flex-end; gap: 10px; flex-wrap: wrap }
+.grades { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; border: 2px solid var(--bd); background: var(--card) }
+.gradebox { display: grid; gap: 1px; padding: 10px 11px; border-right: 1px solid var(--rule); border-bottom: 1px solid var(--rule) }
+.gradebox b { font: 400 34px/1 var(--varsity) }
+.gradebox small { font-size: 12px; color: var(--ink2) }
+.scorebox { display: inline-flex; align-items: center; padding: 10px 14px; border-radius: 5px; background: #050709; border: 3px solid #2b313b; box-shadow: inset 0 3px 8px #000; color: var(--led) }
+.scorebox .ledsvg { height: 54px; filter: drop-shadow(0 0 6px currentColor) }
+.pick { display: grid; gap: 8px }
+.opts { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px }
+.opt { display: grid; gap: 4px; padding: 10px 12px; border-radius: 3px; background: var(--card); border: 2px solid var(--rule); align-content: start }
+.opt:hover:not(:disabled) { border-color: var(--bd) }
+.opt:disabled { opacity: .45; cursor: not-allowed }
+.opt[aria-pressed="true"] { border-color: var(--bd); box-shadow: 0 3px 0 var(--bd); background: var(--note); color: var(--note-ink) }
+.opt[aria-pressed="true"] small { color: var(--note-ink) }
+.opt b { font: 700 15px var(--cond); letter-spacing: .05em; text-transform: uppercase } .opt small { font-size: 12.5px; color: var(--ink2); line-height: 1.4 } .opt em { font: 700 11px var(--cond); font-style: normal; letter-spacing: .12em; text-transform: uppercase; color: var(--ink3) }
+.swatches { display: flex; flex-wrap: wrap; gap: 8px }
+.swatch { width: 38px; height: 38px; border-radius: 3px; border: 2px solid var(--rule); overflow: hidden; display: grid; grid-template-columns: 1fr 1fr; padding: 0 }
+.swatch[aria-pressed="true"] { border-color: var(--bd); box-shadow: 0 3px 0 var(--bd) }
+.emb { width: 42px; height: 42px; border-radius: 3px; border: 2px solid var(--rule); background: var(--card); display: grid; place-items: center }
+.emb[aria-pressed="true"] { border-color: var(--bd); box-shadow: 0 3px 0 var(--bd) }
+.field { display: grid; gap: 4px }
+.field input[type="text"] { font: 400 19px var(--varsity); text-transform: uppercase; letter-spacing: .02em; padding: 8px 10px 6px; border-radius: 3px; border: 2px solid var(--bd); background: var(--card); color: var(--ink); width: 100%; min-width: 0 }
+.hero { display: flex; gap: 16px; align-items: center }
+.hero h1 { font: 400 clamp(32px, 7vw, 48px)/.98 var(--varsity); text-transform: uppercase; letter-spacing: .01em }
+.cycle { display: grid }
+.cycle div { display: grid; grid-template-columns: 96px 1fr; gap: 10px; padding: 7px 2px; border-bottom: 1px solid var(--rule); font-size: 14px }
+.cycle div > b { font: 700 12.5px var(--cond); letter-spacing: .09em; text-transform: uppercase; color: var(--accent); padding-top: 2px }
+.toasts { position: fixed; right: max(12px, env(safe-area-inset-right, 0px)); bottom: calc(12px + env(safe-area-inset-bottom, 0px)); display: grid; gap: 8px; z-index: 15; width: min(350px, calc(100% - 24px)); pointer-events: none }
+.toast { padding: 10px 13px; border-radius: 3px; background: var(--board); color: var(--board-ink); font-size: 13.5px; border: 1px solid #000; border-left: 5px solid var(--board-ink2); box-shadow: 0 6px 18px rgba(0, 0, 0, .4); animation: rise .25s ease-out }
+.toast.k-good { border-left-color: var(--led-green) } .toast.k-bad { border-left-color: var(--led-red) } .toast.k-city { border-left-color: var(--led) }
+@keyframes fade { from { opacity: 0 } }
+@keyframes rise { from { opacity: 0; transform: translateY(8px) } }
+@keyframes blink { from { opacity: 1 } to { opacity: .25 } }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important } }
+
+@media (max-width: 900px) {
+  .stage { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(200px, 40%) minmax(0, 1fr) }
+  .side { border-left: 0; border-top: 3px solid var(--board-line) }
+  .stage.mapfull { grid-template-rows: minmax(0, 1fr) 0 } .stage.mapfull .side { display: none }
+  .panel { padding-left: max(30px, env(safe-area-inset-left, 0px)); background: linear-gradient(90deg, transparent 16px, var(--margin) 16px, var(--margin) 17.500px, transparent 17.500px) }
+  .cal-bar { display: none } .cal { flex-basis: 60px }
+  .brand-t b { font-size: 14.5px }
+  .top-in { gap: 10px }
+  .zoom .only-phone { display: grid }
+  .zoom button[data-act="zoom"] { display: none } .stage.mapfull .zoom button[data-act="zoom"] { display: grid }
+  .card { position: fixed; left: 0; right: 0; bottom: 0; width: auto; max-height: 58%; border-radius: 0; border-width: 3px 0 0; z-index: 12; padding: 0 max(16px, env(safe-area-inset-right, 0px)) calc(16px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); box-shadow: 0 -8px 30px rgba(0, 0, 0, .4) }
+  .card h3 { margin: 0 calc(-1 * max(16px, env(safe-area-inset-right, 0px))) 0 calc(-1 * max(16px, env(safe-area-inset-left, 0px))); padding-left: max(16px, env(safe-area-inset-left, 0px)) }
+  .paused { right: auto; left: 50%; transform: translateX(-50%); bottom: 40px }
+  .tabs { padding: 6px 4px 0; gap: 2px }
+  .tabs button { flex: 1 1 0; min-width: 0; padding: 6px 1px 5px; font-size: 10.5px; letter-spacing: .03em }
+  .seg button { padding: 5px 7px; font-size: 11.5px }
+  .modal { padding: 0 16px 18px }
+  .lh { margin: 0 -16px; padding-left: 16px }
+  .modal h2 { font-size: 21px }
+  .grades { grid-template-columns: repeat(2, 1fr) }
+  .scorebox .ledsvg { height: 42px }
+  .toasts { bottom: auto; top: calc(120px + env(safe-area-inset-top, 0px)) }
+}
+@media (max-width: 560px) {
+  .top-in { flex-wrap: wrap; row-gap: 3px; justify-content: space-between } .brand { flex: 1 1 0 } .cal { order: 5; flex: 1 0 100% }
+  .top-btns [data-act="help"] { display: none }
+  .brand-t b { font-size: 11.5px; letter-spacing: 0 } .brand-t i { font-size: 10px; letter-spacing: .05em }
+  .vitals { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 5px; overflow: visible }
+  .vital { min-width: 0; padding: 5px 5px 6px } .vital em { display: none } .vital small { font-size: 9.5px; letter-spacing: .06em; overflow: hidden; text-overflow: ellipsis }
+  .vital .led { height: 25px; padding: 0 4px } .ledsvg { height: 15px }
+  .lh i { display: none }
+}
+@media (pointer: coarse), (max-width: 900px) {
+  .pips button { min-width: 38px; height: 40px; font-size: 14px }
+  .step button { width: 44px; height: 42px } .step b { min-width: 40px }
+  .nudge { width: 40px; height: 40px }
+  .btn.sm { min-height: 38px; padding: 6px 12px }
+  .card .x, .modal .x { width: 40px; height: 40px; top: 1px; right: 2px; font-size: 24px }
+  .zoom button { width: 40px; height: 40px } .ib, .speed button { height: 38px }
+  .seg button { min-height: 36px }
+  input[type="range"] { height: 34px }
+  .tabs button { min-height: 50px }
+}
+@media (max-width: 420px) { .speed button { width: 33px } .brand svg { width: 28px; height: 32px } .grid3 { grid-template-columns: 1fr 1fr } }
+</style>
+
+<div class="app" id="app">
+  <header class="top">
+    <div class="top-in">
+      <button class="brand" data-act="tab" data-arg="desk" aria-label="Open the head's desk"><span id="t-crest"></span><span class="brand-t"><b id="t-name">Head of School</b><i id="t-date"></i></span></button>
+      <div class="cal" id="cal"></div>
+      <div class="top-btns"><button class="ib" data-act="help" aria-label="Help" title="Help: how the game works">?</button><button class="ib" data-act="menu" aria-label="Menu" title="Menu: sound, new game"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M2 4h12M2 8h12M2 12h12" stroke="currentColor" stroke-width="1.700" stroke-linecap="round"/></svg></button></div>
+      <div class="speed" role="group" aria-label="Game speed. Space pauses; 1, 2 and 3 set the speed" id="speed"></div>
+    </div>
+    <div class="vitals" id="vitals"></div>
+  </header>
+  <main class="stage">
+    <section class="mapwrap" aria-label="City map">
+      <canvas id="map" tabindex="0" aria-label="City map. Arrow keys move, plus and minus zoom, 0 returns to campus. Click a neighborhood for details."></canvas>
+      <div class="map-tools"><div class="seg" id="overlays" role="group" aria-label="Map layer"></div><div class="maplegend" id="maplegend" hidden></div><div class="map-hint" id="maphint" hidden></div></div>
+      <div class="zoom"><button data-act="zoom" data-arg="1.3" aria-label="Zoom in" title="Zoom in (+)">+</button><button data-act="zoom" data-arg="0.77" aria-label="Zoom out" title="Zoom out (-)">&minus;</button><button data-act="center" aria-label="Center on campus" title="Back to campus (0)"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="4.500" fill="none" stroke="currentColor" stroke-width="1.500"/><circle cx="8" cy="8" r="1.300" fill="currentColor"/><path d="M8 1v2.500M8 12.500V15M1 8h2.500M12.500 8H15" stroke="currentColor" stroke-width="1.500" stroke-linecap="round"/></svg></button><button class="only-phone" data-act="mapfull" aria-label="Make the map bigger or smaller" title="Bigger map"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 6V3h3M13 6V3h-3M3 10v3h3M13 10v3h-3" fill="none" stroke="currentColor" stroke-width="1.600" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>
+      <button class="paused" id="paused" data-act="speed" data-arg="1" hidden></button>
+      <div class="card" id="card" hidden></div>
+      <div class="ticker" id="ticker"></div>
+    </section>
+    <aside class="side">
+      <nav class="tabs" id="tabs" role="tablist"></nav>
+      <div class="panel" id="panel" role="tabpanel"></div>
+    </aside>
+  </main>
+</div>
+<div id="modal"></div>
+<div class="toasts" id="toasts" aria-live="polite"></div>
+<script>
+(function () {
+'use strict';
+/*__JS__*/
+})();
+</script>

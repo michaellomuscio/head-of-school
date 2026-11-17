@@ -1,0 +1,375 @@
+/* The head's office: top bar, tabbed panels, map cards and every dialog. Plain template strings, one click handler. */
+const App = { S: null, map: null, speed: 0, tab: 'desk', modal: null, m: {}, acc: 0, logSeen: 0, card: null, sound: true, setup: null, dark: false, dragging: false, ui: { seen: {}, tour: {}, tourOff: false, mapHint: false } };
+const $ = (id) => document.getElementById(id);
+
+const ICON = {
+  desk: '<path d="M2 7h14M3.5 7v7M14.5 7v7M6 7V4h6v3"/>',
+  admissions: '<circle cx="6.5" cy="6" r="2.5"/><path d="M2 15c0-3 2-4.5 4.5-4.5S11 12 11 15"/><circle cx="12.5" cy="7" r="2"/><path d="M12.5 10.5c2 0 3.5 1.3 3.5 4"/>',
+  money: '<circle cx="9" cy="9" r="6.5"/><path d="M11.2 6.8c-.5-.8-1.3-1.1-2.2-1.1-1.3 0-2.2.7-2.2 1.7 0 2.3 4.6 1 4.6 3.4 0 1-1 1.7-2.4 1.7-1 0-1.9-.4-2.4-1.2M9 4.3v9.4"/>',
+  people: '<path d="M1.5 7 9 3.5 16.5 7 9 10.5z"/><path d="M4.5 8.6v3.2c1.2 1.3 2.7 1.9 4.5 1.9s3.3-.6 4.5-1.9V8.6M16.5 7v4"/>',
+  program: '<path d="M9 5c-1.6-1.2-3.6-1.7-6-1.5v10c2.4-.2 4.4.3 6 1.5 1.6-1.2 3.6-1.7 6-1.5v-10c-2.4-.2-4.4.3-6 1.5zM9 5v10"/>',
+  campus: '<path d="M2 15h14M3.5 15V8L9 4l5.5 4v7M7.5 15v-3.5h3V15M9 4V1.8h2.5"/>',
+  giving: '<path d="M9 15S2.5 11.2 2.5 6.8C2.5 4.7 4 3.3 5.9 3.3c1.3 0 2.4.7 3.1 1.8.7-1.1 1.8-1.8 3.1-1.8 1.9 0 3.4 1.4 3.4 3.5C15.5 11.2 9 15 9 15z"/>',
+};
+const icon = (k) => '<svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + ICON[k] + '</svg>';
+const TABS = [['desk', 'Overview'], ['admissions', 'Enrollment'], ['money', 'Money'], ['people', 'People'], ['program', 'Program'], ['campus', 'Campus'], ['giving', 'Giving']];
+
+function emblemSvg(e, a) {
+  if (e === 'book') return '<path fill="#fff" d="M20 21c-3-2-6.5-2.3-9.5-2v11c3-.3 6.500 0 9.500 2 3-2 6.500-2.300 9.500-2V19c-3-.3-6.500 0-9.500 2z"/><path stroke="' + a + '" stroke-width="1.2" d="M20 21v11"/>';
+  if (e === 'torch') return '<path fill="#fff" d="M17.300 26h5.400l-1.300 8h-2.800z"/><path fill="#fff" d="M20 15c2.600 2.600 3.700 4.700 3.700 6.600a3.700 3.700 0 0 1-7.400 0c0-1.300.6-2.300 1.600-3.200.2 1.100.7 1.600 1.400 1.600.2-1.900.3-3.400.7-5z"/>';
+  if (e === 'tree') return '<circle fill="#fff" cx="20" cy="22.500" r="6.800"/><rect fill="#fff" x="18.800" y="27" width="2.400" height="7.500"/>';
+  if (e === 'tower') return '<path fill="#fff" d="M15 34V22h10v12zM13.500 22l6.500-6.500 6.500 6.500z"/><rect x="18.600" y="27.500" width="2.800" height="6.500" fill="' + a + '"/>';
+  if (e === 'sun') { let r = ''; for (let k = 0; k < 8; k++) { const t = k * Math.PI / 4; r += '<path stroke="#fff" stroke-width="1.800" stroke-linecap="round" d="M' + (20 + Math.cos(t) * 7).toFixed(1) + ' ' + (25 + Math.sin(t) * 7).toFixed(1) + 'L' + (20 + Math.cos(t) * 10).toFixed(1) + ' ' + (25 + Math.sin(t) * 10).toFixed(1) + '"/>'; } return '<circle fill="#fff" cx="20" cy="25" r="4.600"/>' + r; }
+  let pts = ''; for (let k = 0; k < 10; k++) { const t = -Math.PI / 2 + k * Math.PI / 5, rad = k % 2 ? 3.6 : 8.6; pts += (20 + Math.cos(t) * rad).toFixed(1) + ',' + (25 + Math.sin(t) * rad).toFixed(1) + ' '; }
+  return '<polygon fill="#fff" points="' + pts + '"/>';
+}
+function crest(colors, emblem, size) {
+  const a = colors[0], b = colors[1], id = 'c' + Math.random().toString(36).slice(2, 8);
+  return '<svg width="' + size + '" height="' + Math.round(size * 1.15) + '" viewBox="0 0 40 46" aria-hidden="true"><defs><clipPath id="' + id + '"><path d="M4 3h32v19c0 11-7.500 18-16 21C11.500 40 4 33 4 22z"/></clipPath></defs>' +
+    '<g clip-path="url(#' + id + ')"><rect width="40" height="46" fill="' + a + '"/><rect width="40" height="12.500" fill="' + b + '"/><rect y="12.500" width="40" height="1.500" fill="#fff" opacity=".85"/></g>' +
+    emblemSvg(emblem, a) + '<path d="M4 3h32v19c0 11-7.500 18-16 21C11.500 40 4 33 4 22z" fill="none" stroke="rgba(0,0,0,.28)" stroke-width="1"/></svg>';
+}
+
+/* ---------- small pieces ---------- */
+/* Seven-segment scoreboard digits. Unlit segments stay faintly visible, like the real thing. */
+const SEGS = { a: '2,1 8,1 9,2 8,3 2,3 1,2', b: '8,3 9,2 10,3 10,8 9,9 8,8', c: '8,10 9,9 10,10 10,15 9,16 8,15', d: '2,15 8,15 9,16 8,17 2,17 1,16', e: '0,10 1,9 2,10 2,15 1,16 0,15', f: '0,3 1,2 2,3 2,8 1,9 0,8', g: '2,8 8,8 9,9 8,10 2,10 1,9' };
+const DIGIT = { 0: 'abcdef', 1: 'bc', 2: 'abdeg', 3: 'abcdg', 4: 'bcfg', 5: 'acdfg', 6: 'acdefg', 7: 'abc', 8: 'abcdefg', 9: 'abcdfg', '-': 'g' };
+function led(text) {
+  const s = String(text).replace('\u2212', '-'); let x = 0, out = '';
+  for (const ch of s) {
+    if (DIGIT[ch] != null) { const on = DIGIT[ch]; out += '<g transform="translate(' + x + ',0)">' + Object.keys(SEGS).map((k) => '<polygon class="' + (on.indexOf(k) >= 0 ? 'on' : 'off') + '" points="' + SEGS[k] + '"/>').join('') + '</g>'; x += 13; }
+    else if (ch === '.') { out += '<rect class="on" x="' + (x - 1.5) + '" y="15" width="2.200" height="2.200"/>'; x += 3; }
+    else if (ch === ' ') x += 5;
+    else { out += '<text x="' + x + '" y="16.500">' + esc(ch.toUpperCase()) + '</text>'; x += ch === '%' ? 12 : ch === 'M' ? 12 : 10; }
+  }
+  return '<svg class="ledsvg" viewBox="-1 0 ' + (x + 1) + ' 18" aria-hidden="true"><g transform="skewX(-5)">' + out + '</g></svg>';
+}
+const initials = (name) => name.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase();
+const meter = (frac, cls) => '<span class="meter ' + (cls || '') + '"><i style="width:' + clamp(frac * 100, 0, 100).toFixed(0) + '%"></i></span>';
+const toneOf = (v) => (v < 40 ? 'bad' : v < 55 ? 'warn' : 'good');
+const stars = (n) => '<span class="stars" aria-label="' + n + ' of 5">' + '★'.repeat(n) + '<span style="opacity:.3">' + '★'.repeat(5 - n) + '</span></span>';
+function termsHTML(terms) {
+  return '<div class="terms">' + terms.filter((t) => Math.abs(t.v) >= 0.05).map((t) => '<div class="term' + (t.temp ? ' temp' : '') + '"><span>' + esc(t.label) + '</span><b class="' + (t.v >= 0 ? 'pos' : 'neg') + '">' + (t.v >= 0 ? '+' : '−') + Math.abs(t.v).toFixed(1) + '</b></div>').join('') + '</div>';
+}
+function spark(arr, label, fmt) {
+  const a = arr.slice(-60); if (a.length < 2) return '<div class="spark"><span class="lbl">' + label + '</span><b class="num">' + (a.length ? fmt(a[a.length - 1]) : '—') + '</b><svg viewBox="0 0 100 34"></svg></div>';
+  const lo = Math.min.apply(null, a), hi = Math.max.apply(null, a), sp = hi - lo || 1;
+  const pts = a.map((v, k) => [k / (a.length - 1) * 98 + 1, 30 - (v - lo) / sp * 26]);
+  const d = pts.map((p, k) => (k ? 'L' : 'M') + p[0].toFixed(1) + ' ' + p[1].toFixed(1)).join(''), e = pts[pts.length - 1];
+  return '<div class="spark"><span class="lbl">' + label + '</span><b class="num">' + fmt(a[a.length - 1]) + '</b><svg viewBox="0 0 100 34" preserveAspectRatio="none"><path d="' + d + 'L99 34L1 34z" fill="var(--accent)" opacity=".12"/><path d="' + d + '" fill="none" stroke="var(--accent)" stroke-width="1.6" vector-effect="non-scaling-stroke"/><circle cx="' + e[0].toFixed(1) + '" cy="' + e[1].toFixed(1) + '" r="2.200" fill="var(--accent)"/></svg></div>';
+}
+const whenLabel = (w) => MONTHS[Math.floor((w % WPY) / 4)].slice(0, 3) + ' Y' + (Math.floor(w / WPY) + 1);
+const slide = (id, attrs) => '<div class="slide"><button class="nudge" data-act="nudge" data-arg="' + id + ',-1" aria-label="A little less">\u2212</button><input type="range" id="' + id + '" ' + attrs + '><button class="nudge" data-act="nudge" data-arg="' + id + ',1" aria-label="A little more">+</button></div>';
+const LOCK = '<svg width="10" height="12" viewBox="0 0 10 12" aria-hidden="true"><rect x="1" y="5" width="8" height="6" rx="1" fill="currentColor"/><path d="M3 5V3.500a2 2 0 0 1 4 0V5" fill="none" stroke="currentColor" stroke-width="1.300"/></svg>';
+const NOW = '<small class="when">Applies at once</small>';
+const isCoarse = () => !!(window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
+function auxAt(S, k, st) { const o = S.prog.aux; S.prog.aux = k; const v = auxNet(S, st, S.costIdx); S.prog.aux = o; return v; }
+const row = (a, b, cls) => '<div class="row' + (cls ? ' ' + cls : '') + '"><span>' + a + '</span><span class="num">' + b + '</span></div>';
+const MILESTONES = [[6, 'Opening Day', 'Enrollment locks in for the year. Staff each division before it.'], [8, 'Admission season opens', 'From now to January, marketing, focus neighborhoods and buses decide who applies.'], [26, 'Budget meeting', 'You set next year\u2019s tuition increase and salary pool. The game pauses for it.'], [30, 'Application deadline', 'The applicant pool is final.'], [32, 'Re-enrollment', 'Current families decide whether to return. Satisfaction and the tuition increase drive it.'], [34, 'Admission decisions', 'You choose how deep to admit and how much aid to offer. The game pauses for it.'], [38, 'Deposits due', 'Admitted families answer, and teachers announce who is leaving.'], [45, 'Commencement', 'Seniors graduate. College results feed reputation.'], [47, 'Board review', 'Six grades, and every third year a vote on your contract.']];
+const PANEL_LEAD = { desk: ['Overview', 'What needs you, what the board wants, and how you are doing.'], admissions: ['Enrollment', 'Who applies, who enrolls and who stays.'], money: ['Money', 'The budget, tuition and the balance sheet.'], people: ['People', 'Teachers, pay and your senior team.'], program: ['Program', 'What you teach and how well.'], campus: ['Campus', 'Buildings, upkeep and construction.'], giving: ['Giving', 'The annual fund, the endowment and campaigns.'] };
+const PANEL_TIP = {
+  desk: 'Start here. Click any item under "Needs your attention" to jump to the tab that fixes it.',
+  admissions: 'Marketing and Focus change who applies. A bus route costs money and makes a far neighborhood feel closer. Both build over weeks, not days.',
+  money: 'This tab mostly reports. Tuition and salaries are set at the January budget meeting; everything else is set on the other tabs and shows up here.',
+  people: 'Use \u2212 and + to change how many teachers each division has. Search fills an empty leadership seat.',
+  program: 'Click a numbered box to set a program\u2019s level. Higher levels cost more every year, starting now.',
+  campus: '"Plan it" shows the price and how to pay. Nothing is spent until you confirm.',
+  giving: 'The endowment draw is the one dial here. Launch a capital campaign when you want a building you cannot pay for.',
+};
+const TOUR = [['map', 'Click a neighborhood on the map'], ['people', 'Check staffing on the People tab'], ['enroll', 'Look at marketing on the Enrollment tab'], ['why', 'Click the Families number at the top to see what drives it'], ['play', 'Press play and run to Opening Day']];
+function tourHTML() {
+  const u = App.ui; if (u.tourOff || TOUR.every((t) => u.tour[t[0]])) return '';
+  return '<section class="sec"><h3>First steps <small><button class="link" data-act="tourOff">Hide</button></small></h3><div class="rows">' + TOUR.map((t) => '<button class="todo' + (u.tour[t[0]] ? ' done' : '') + '" data-act="tourGo" data-arg="' + t[0] + '"><i>\u2713</i><span>' + t[1] + '</span></button>').join('') + '</div></section>';
+}
+
+/* ---------- top bar ---------- */
+function renderTop() {
+  const S = App.S; if (!S) return;
+  $('t-name').textContent = S.name;
+  $('t-date').textContent = dateLabel(S) + ' · ' + yearLabel(S) + (App.setup ? '' : ' · Year ' + (yr(S) + 1));
+  const w = wk(S), nx = MILESTONES.find((m) => m[0] > w) || [48 + 6, 'Opening Day'];
+  const mo = Math.floor(w / 4);
+  $('cal').innerHTML = '<div class="cal-bar" aria-hidden="true">' + MONTHS.map((m, k) => '<span class="s-' + (k <= 1 || k === 11 ? 'summer' : k <= 4 ? 'fall' : k <= 7 ? 'winter' : 'spring') + (k < mo ? ' past' : k === mo ? ' now' : '') + (k === 1 || k === 6 || k === 8 || k === 11 ? ' mk' : '') + '" title="' + m + '">' + m[0] + '</span>').join('') + '</div>' +
+    '<button class="cal-next" data-act="year" title="See the year ahead">Next: <b>' + nx[1] + '</b> in ' + (nx[0] - w) + (nx[0] - w === 1 ? ' week' : ' weeks') + '</button>';
+  const sp = [['0', '<svg width="12" height="12" viewBox="0 0 12 12"><rect x="2" y="1.500" width="3" height="9" fill="currentColor"/><rect x="7" y="1.500" width="3" height="9" fill="currentColor"/></svg>', 'Pause (Space)'], ['1', '<svg width="12" height="12" viewBox="0 0 12 12"><path d="M3 1.500v9l7-4.500z" fill="currentColor"/></svg>', 'Play (1)'], ['2', '<svg width="16" height="12" viewBox="0 0 16 12"><path d="M1 1.500v9l6-4.500zM8 1.500v9l6-4.500z" fill="currentColor"/></svg>', 'Fast (2)'], ['3', '<svg width="20" height="12" viewBox="0 0 20 12"><path d="M0 1.500v9l6-4.500zM7 1.500v9l6-4.500zM14 1.500v9l6-4.500z" fill="currentColor"/></svg>', 'Fastest (3)']];
+  $('speed').innerHTML = sp.map((s) => '<button data-act="speed" data-arg="' + s[0] + '" aria-pressed="' + (App.speed === +s[0]) + '" aria-label="' + s[2] + '" title="' + s[2] + '">' + s[1] + '</button>').join('');
+  const st = students(S), cap = totalCapacity(S), pn = projNet(S), h = S.hist;
+  const tr = (arr, cur) => { if (arr.length < 3) return '<em class="flat">—</em>'; const d = cur - arr[arr.length - 3]; return Math.abs(d) < 0.5 ? '<em class="flat">steady</em>' : d > 0 ? '<em class="up">▲ ' + d.toFixed(0) + '</em>' : '<em class="down">▼ ' + Math.abs(d).toFixed(0) + '</em>'; };
+  const v = [
+    ['tab', 'admissions', 'Students', st, '<em>' + pct(st / cap) + ' of ' + cap + ' seats</em>', st / cap, ''],
+    ['tab', 'money', 'Cash', money(S.cash), '<em>' + (S.cash < 0 ? 'overdrawn' : cashMonths(S).toFixed(1) + ' months of costs') + '</em>', null, S.cash < 0 ? 't-bad' : ''],
+    ['tab', 'money', 'This year', money(pn, true), '<em>projected result</em>', null, pn < -0.02 * S.ytd.rev && pn < -50000 ? 't-bad' : ''],
+    ['drivers', 'rep', 'Reputation', Math.round(S.rep), tr(h.rep, S.rep), S.rep / 100, 't-' + toneOf(S.rep)],
+    ['drivers', 'sat', 'Families', Math.round(S.sat), tr(h.sat, S.sat), S.sat / 100, 't-' + toneOf(S.sat)],
+    ['drivers', 'morale', 'Faculty', Math.round(S.morale), tr(h.morale, S.morale), S.morale / 100, 't-' + toneOf(S.morale)],
+    ['drivers', 'board', 'Board', Math.round(S.board), tr(h.board, S.board), S.board / 100, 't-' + toneOf(S.board)],
+  ];
+  $('vitals').innerHTML = v.map((x, k) => {
+    const txt = String(x[3]), col = (k === 1 && S.cash < 0) || (k === 2 && pn < 0) || x[6] === 't-bad' ? ' c-red' : k === 2 && pn > 0 ? ' c-green' : '';
+    return '<button class="vital ' + x[6] + col + '" data-act="' + x[0] + '" data-arg="' + x[1] + '" aria-label="' + x[2] + ' ' + txt + '" title="' + (x[0] === 'tab' ? 'Open the ' + PANEL_LEAD[x[1]][0] + ' tab' : 'See what drives this number') + '"><small>' + x[2] + '</small><span class="led">' + led(txt) + '</span>' + x[4] +
+      (x[5] == null ? '' : '<span class="bulbs">' + [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((b) => '<i' + (x[5] * 10 > b + 0.5 ? ' class="on"' : '') + '></i>').join('') + '</span>') + '</button>';
+  }).join('');
+  const last = S.log[S.log.length - 1];
+  $('ticker').innerHTML = last ? '<b>' + whenLabel(last.w) + '</b>' + esc(last.text) : '';
+  renderMapChrome();
+}
+/* The floating cues on the map: the paused pill, the first-visit hint and the layer legend. */
+function renderMapChrome() {
+  const S = App.S, p = $('paused'), h = $('maphint'), lg = $('maplegend'), live = S && !App.setup && !S.over, coarse = isCoarse();
+  p.hidden = !(live && App.speed === 0 && !App.modal);
+  if (!p.hidden) p.innerHTML = '<svg width="11" height="11" viewBox="0 0 12 12" aria-hidden="true"><path d="M3 1.500v9l7-4.500z" fill="currentColor"/></svg>Paused. ' + (coarse || window.innerWidth < 560 ? 'Tap here to run the year.' : 'Click here or press Space to run the year.');
+  h.hidden = !(live && !App.ui.mapHint && !App.card);
+  if (!h.hidden) h.textContent = coarse ? 'Tap a neighborhood or your campus. Drag to move, pinch to zoom.' : 'Click a neighborhood or your campus. Drag to move, scroll to zoom.';
+  const O = S && OVERLAYS[App.map.overlay];
+  lg.hidden = !O;
+  if (O) { lg.style.setProperty('--c0', O.c0); lg.style.setProperty('--c1', O.c1 || S.colors[0]); lg.innerHTML = O.legend[0] + '<i></i>' + O.legend[1]; }
+}
+function renderTabs() {
+  const S = App.S, al = S ? alerts(S) : [], cnt = {}, warn = {};
+  al.forEach((a) => { if (a.sev >= 2) cnt[a.tab] = (cnt[a.tab] || 0) + 1; else if (a.sev === 1) warn[a.tab] = 1; });
+  $('tabs').innerHTML = TABS.map((t) => '<button role="tab" data-act="tab" data-arg="' + t[0] + '" aria-selected="' + (App.tab === t[0]) + '" aria-controls="panel" title="' + PANEL_LEAD[t[0]][1] + '">' + icon(t[0]) + t[1] + (App.tab === t[0] ? '' : cnt[t[0]] ? '<i class="dot" aria-label="' + cnt[t[0]] + ' urgent">' + cnt[t[0]] + '</i>' : warn[t[0]] ? '<i class="dot s1"></i>' : '') + '</button>').join('');
+  $('overlays').innerHTML = [['none', 'City'], ['income', 'Income'], ['kids', 'Children'], ['reach', 'Your reach']].map((o) => '<button data-act="overlay" data-arg="' + o[0] + '" aria-pressed="' + (App.map.overlay === o[0]) + '">' + o[1] + '</button>').join('');
+  renderMapChrome();
+}
+
+/* ---------- panels ---------- */
+const PANELS = {
+  desk(S) {
+    const al = alerts(S), lg = legacy(S), y = yr(S), h = S.hist;
+    const contractY = Math.ceil((y + 1) / 3) * 3;
+    return tourHTML() + '<section class="sec"><h3>Needs your attention <small>Click an item to go there</small></h3><div data-live="alerts" class="sec">' + (al.length ? al.slice(0, 6).map((a) => '<button class="alert s' + a.sev + '" data-act="tab" data-arg="' + a.tab + '">' + esc(a.text) + '</button>').join('') : '<p class="hint">Nothing urgent. Enjoy it while it lasts.</p>') + '</div></section>' +
+      '<section class="sec"><h3>What the board wants <small>Contract review: June ' + (START_YEAR + contractY) + '</small></h3>' + S.goals.map((g) => {
+        const v = GOALS[g.type].val(S), p = goalProgress(S, g);
+        return '<div class="goal' + (g.done ? ' done' : g.failed ? ' failed' : '') + '"><div class="row"><span><b>' + esc(goalText(g)) + '</b></span><span class="tag ' + (g.done ? 'good' : g.failed ? 'bad' : '') + '">' + (g.done ? 'Done' : g.failed ? 'Missed' : 'by June ' + (START_YEAR + g.due + 1)) + '</span></div><div class="row">' + meter(g.done ? 1 : p, g.done ? 'good' : '') + '<span class="num hint">' + GOALS[g.type].fmt(v) + '</span></div></div>';
+      }).join('') + '</section>' +
+      '<section class="sec"><h3>Your legacy <small>' + lg.title + '</small></h3><div class="row"><span class="big" data-live="leg">' + lg.total + '</span><span class="hint">of 1,000 points</span></div><div class="rows">' + lg.parts.map((p) => '<div class="row"><span style="flex:0 0 42%">' + p.name + '</span>' + meter(p.frac) + '<span class="num" style="flex:0 0 58px;text-align:right">' + p.pts + '/' + p.max + '</span></div>').join('') + '</div></section>' +
+      '<section class="sec"><h3>Trends</h3><div class="grid2">' + spark(h.students, 'Students', (v) => Math.round(v)) + spark(h.rep, 'Reputation', (v) => Math.round(v)) + spark(h.cash, 'Cash', (v) => money(v)) + spark(h.eq, 'Teaching quality', (v) => Math.round(v)) + '</div></section>' +
+      '<section class="sec"><h3>The bulletin</h3><div class="log" data-live="log">' + S.log.slice(-14).reverse().map((l) => '<div><time>' + whenLabel(l.w) + '</time><span class="k-' + l.kind + '">' + esc(l.text) + '</span></div>').join('') + '</div></section>' +
+      '<section class="sec"><div class="btns"><button class="btn" data-act="help">Help: how the year works</button><button class="btn" data-act="sound">Sound: ' + (App.sound ? 'on' : 'off') + '</button><button class="btn" data-act="newGame">New game</button>' + (y >= 9 ? '<button class="btn" data-act="retireAsk">Retire</button>' : '') + '</div><p class="hint">' + esc(S.name) + ' · ' + esc(S.city.name) + ' · ' + mission(S).name + ' · <i>' + esc(S.motto) + '</i></p></section>';
+  },
+  admissions(S) {
+    const a = S.adm, w = wk(S); let apps = 0; if (a.stage === 1) for (const n of a.acc) for (const d of n) apps += d[0] + d[1]; else apps = a.apps;
+    const stageText = ['Admission season opens in September. Applications arrive through January.', 'Applications are arriving. The deadline is the end of January.', 'The pool is complete. Decisions go out in March.', 'Offers are out. Families have until April to deposit.', 'Next year’s new students are set. They arrive in July.'][a.stage];
+    const res = a.results, maxG = Math.max(20, Math.max.apply(null, S.grades.map((g, k) => Math.max(g.n, capG(S, k)))) * 1.08);
+    const mk = Math.round(S.marketing / S.costIdx / 10000) * 10;
+    return '<section class="sec"><h3>This admission cycle <small>for ' + yearLabel(S, yr(S) + 1) + '</small></h3><p class="hint">' + stageText + '</p><div class="funnel" data-live="funnel">' +
+      [['Inquiries', a.stage ? Math.round(apps * 2.6) : '—'], ['Applications', a.stage ? Math.round(apps) : '—'], ['Admitted', a.plan ? sum(a.plan.cnt) : '—'], ['Enrolling', res ? sum(res.enr) : '—']].map((x) => '<div><span class="lbl">' + x[0] + '</span><b>' + x[1] + '</b></div>').join('') + '</div>' +
+      '<div class="grid3">' + [['Last year’s applications', S.lastApps], ['Admit rate', pct(S.lastAdmitRate)], ['Yield', pct(S.lastYield)]].map((x) => '<div class="spark"><span class="lbl">' + x[0] + '</span><b class="num">' + x[1] + '</b></div>').join('') + '</div></section>' +
+      '<section class="sec"><h3>Students by grade <small>dashed line = seats</small></h3><div class="gbars">' + S.grades.map((g, k) => '<div><em style="bottom:' + (g.n / maxG * 100 + 1).toFixed(0) + '%">' + g.n + '</em><u style="bottom:' + (capG(S, k) / maxG * 100).toFixed(0) + '%"></u><i class="d' + divOf(k) + '" style="height:' + (g.n / maxG * 100).toFixed(0) + '%"></i></div>').join('') + '</div><div class="glabels">' + GRADE_NAMES.map((n) => '<span>' + n + '</span>').join('') + '</div>' +
+      '<p class="hint">' + (S.returning ? pct(S.lastRetention) + ' of families re-enrolled for next year.' : 'Last re-enrollment: ' + pct(S.lastRetention) + ' of families returned.') + ' Small classes roll upward for years, so a thin Kindergarten is a thin fifth grade later.</p></section>' +
+      '<section class="sec"><h3>Marketing ' + NOW + '</h3><div class="slider"><div class="row"><span>Annual budget</span><b class="num" data-live="mk">' + money(S.marketing) + '</b></div>' + slide('sl-mk', 'data-set="marketing" min="0" max="600" step="10" value="' + mk + '" aria-label="Marketing budget"') + '</div><p class="hint">Marketing builds awareness, not reputation. Pick up to three neighborhoods to concentrate it; the rest get less.</p></section>' +
+      '<section class="sec"><h3>The market ' + NOW + '</h3><p class="hint">Click a name to see it on the map. <b>Focus</b> concentrates your marketing there (up to three). <b>Bus</b> runs a route for ' + money(85000 * S.costIdx) + ' a year.</p><div class="scroll-x"><table class="tbl"><tr><th>Neighborhood</th><th class="r">Yours</th><th class="r">Know you</th><th></th></tr>' + S.city.nbs.map((nb, n) => '<tr' + (App.card && App.card.type === 'nb' && App.card.id === n ? ' class="sel"' : '') + '><td><button class="link" data-act="nb" data-arg="' + n + '">' + esc(nb.name) + '</button><br><span class="hint">$' + Math.round(nb.inc) + 'k · ' + nb.kids + ' per grade</span></td><td class="r">' + Math.round(S.nbE[n]) + '</td><td class="r">' + pct(nb.aware) + '</td><td class="r"><button class="btn sm' + (S.focus.includes(n) ? ' on' : '') + '" data-act="focus" data-arg="' + n + '" aria-pressed="' + S.focus.includes(n) + '" title="Concentrate marketing here">' + (S.focus.includes(n) ? '\u2713 ' : '') + 'Focus</button> <button class="btn sm' + (S.bus.includes(n) ? ' on' : '') + '" data-act="bus" data-arg="' + n + '" aria-pressed="' + S.bus.includes(n) + '" title="Run a bus route, ' + money(85000 * S.costIdx) + ' a year">' + (S.bus.includes(n) ? '\u2713 ' : '') + 'Bus</button></td></tr>').join('') + '</table></div></section>' +
+      '<section class="sec"><h3>Competitors</h3><div class="rows">' + [{ name: S.name + ' (you)', tuition: avgTuition(S), rep: S.rep, you: 1 }].concat(S.city.rivals.filter((r) => r.open)).map((r) => '<div class="row"><span style="flex:0 0 46%">' + (r.you ? '<b>' + esc(r.name) + '</b>' : esc(r.name)) + '<br><span class="hint num">' + (r.tuition ? money(r.tuition) : 'Free') + '</span></span>' + meter(r.rep / 100, r.you ? '' : 'warn') + '<span class="num" style="flex:0 0 28px;text-align:right">' + Math.round(r.rep) + '</span></div>').join('') + '</div><p class="hint">Bars show reputation. Families weigh reputation, price and the drive.</p></section>';
+  },
+  money(S) {
+    const b = budget(S), pn = projNet(S), r = b.rev, e = b.exp, mx = Math.max(r.tuition, e.faculty);
+    const line = (name, v, neg) => '<div class="row"><span style="flex:0 0 40%">' + name + '</span>' + meter(Math.abs(v) / mx, neg ? 'warn' : 'good') + '<span class="num" style="flex:0 0 74px;text-align:right">' + money(v) + '</span></div>';
+    const riv = S.city.rivals.filter((x) => x.open && x.tuition);
+    return '<section class="sec"><h3>This year <small>' + yearLabel(S) + '</small></h3><div data-live="proj"><div class="row"><span class="big ' + (pn < 0 ? 'neg' : 'pos') + '">' + money(pn, true) + '</span><span class="hint">projected operating result</span></div><p class="hint">So far: ' + money(S.ytd.rev) + ' in, ' + money(S.ytd.exp - S.ytd.oneoff) + ' out' + (S.ytd.oneoff < -1000 ? ', including ' + money(-S.ytd.oneoff) + ' in one-time costs' : '') + '.</p></div></section>' +
+      '<section class="sec"><h3>Annual budget <small>at today’s settings</small></h3><div class="rows" data-live="bud"><div class="row tot"><span>Revenue</span><span class="num">' + money(b.revT) + '</span></div>' + line('Tuition', r.tuition) + line('Financial aid', r.aid, 1) + line('Annual fund', r.fund) + line('Endowment draw', r.draw) + line('Auxiliary', r.aux) +
+      '<div class="row tot"><span>Expenses</span><span class="num">' + money(b.expT) + '</span></div>' + line('Faculty', e.faculty, 1) + line('Administration', e.admin, 1) + line('Programs', e.program, 1) + line('Buildings', e.facilities, 1) + line('Marketing & buses', e.outreach, 1) + line('Insurance, tech, supplies', e.other, 1) + line('Debt service', e.debt, 1) +
+      '<div class="row tot"><span>Result</span><span class="num ' + (b.net < 0 ? 'neg' : 'pos') + '">' + money(b.net, true) + '</span></div></div></section>' +
+      '<section class="sec"><h3>Tuition <small class="when">Set each January</small></h3><div class="rows">' + [0, 1, 2].map((d) => row(DIV_NAMES[d] + ' School <span class="hint">(' + DIV_SPAN[d] + ')</span>', money(S.tuition[d]))).join('') + row('Average after aid', money(b.ntr / Math.max(1, students(S)))) + row('Discount rate <span class="hint">(aid as a share of tuition)</span>', pct(discountRate(S), 1)) + (riv.length ? row('Competitors charge', riv.map((x) => money(x.tuition)).join(' · ')) : '') + '</div><p class="hint">Tuition and salaries are set once a year, at the January budget meeting. Last increase: ' + S.lastTuitionPct + '%. Inflation is running at ' + pct(S.infl, 1) + '.</p></section>' +
+      '<section class="sec"><h3>Balance sheet</h3><div class="rows" data-live="bal">' + row('Cash', money(S.cash)) + row('Endowment', money(S.endow)) + row('Building fund <span class="hint">(gifts for construction)</span>', money(S.campaignFund)) + row('Debt <span class="hint">at ' + pct(S.debtRate, 1) + '</span>', money(S.debt)) + '</div><div class="btns"><button class="btn sm" data-act="borrow" ' + (borrowLimit(S) < 500000 ? 'disabled' : '') + '>Borrow $500k at ' + pct(borrowRate(S), 1) + '</button><button class="btn sm" data-act="repay" ' + (S.debt < 1 || S.cash < 250000 ? 'disabled' : '') + '>Repay $250k</button></div><p class="hint">Lenders will go to about 110% of annual revenue. If cash runs below zero you live on a credit line; when that runs out, the trustees rescue you once.</p></section>' +
+      '<section class="sec"><h3>History</h3><div class="grid2">' + spark(S.hist.cash, 'Cash', (v) => money(v)) + spark(S.hist.endow, 'Endowment', (v) => money(v)) + '</div>' + (S.years.length ? '<div class="scroll-x"><table class="tbl"><tr><th>Year</th><th class="r">Students</th><th class="r">Net tuition</th><th class="r">Result</th></tr>' + S.years.slice(-6).map((y) => '<tr><td>' + yearLabel(S, y.y) + '</td><td class="r">' + y.students + '</td><td class="r">' + money(y.ntr) + '</td><td class="r ' + (y.net < 0 ? 'neg' : 'pos') + '">' + money(y.net, true) + '</td></tr>').join('') + '</table></div>' : '') + '</section>';
+  },
+  people(S) {
+    const rate = clamp(0.1 + (55 - S.morale) * 0.003 + (1 - S.salaryIdx) * 0.25 - (has(S, 'housing') ? 0.02 : 0), 0.04, 0.35);
+    return '<section class="sec"><h3>Faculty</h3><div class="grid3" data-live="fac3">' + [['Morale', Math.round(S.morale)], ['Quality', Math.round(S.fq)], ['Pay vs. market', Math.round(S.salaryIdx * 100) + '%']].map((x) => '<div class="spark"><span class="lbl">' + x[0] + '</span><b class="num">' + x[1] + '</b></div>').join('') + '</div>' +
+      '<p class="hint">Average salary ' + money(S.mktSalary * S.salaryIdx) + '; comparable schools pay ' + money(S.mktSalary) + '. At this morale and pay, expect about ' + pct(rate) + ' of teachers to leave each spring. Quality rises when strong people stay and good hires replace the ones who go.</p>' +
+      '<details><summary>What drives morale</summary><div data-live="mor">' + termsHTML(moraleTerms(S)) + '</div></details></section>' +
+      '<section class="sec"><h3>Staffing <small>' + sum(S.fac) + ' teachers \u00b7 changes apply at once</small></h3><div class="rows" data-live="staff">' + [0, 1, 2].map((d) => { const r = ratio(S, d); return '<div class="row"><span><b>' + DIV_NAMES[d] + ' School</b><br><span class="hint">' + divStudents(S, d) + ' students · <span class="' + (r > 11 ? 'neg' : '') + '">' + r.toFixed(1) + ' per teacher</span></span></span><span class="step"><button data-act="fac" data-arg="' + d + ',-1" aria-label="One fewer teacher">−</button><b>' + S.fac[d] + '</b><button data-act="fac" data-arg="' + d + ',1" aria-label="One more teacher">+</button></span></div>'; }).join('') + '</div><p class="hint">Around 9 students per teacher is typical. Fewer lifts teaching quality and morale but costs about ' + money(S.mktSalary * S.salaryIdx * 1.27) + ' per teacher. Cuts during the school year cost severance and morale; summer is kinder.</p></section>' +
+      '<section class="sec"><h3>Professional growth ' + NOW + '</h3><div class="row"><span>Training and conference budget<br><span class="hint">' + money(S.pd * 900 * S.costIdx) + ' per teacher. Raises quality every year and helps morale.</span></span><span class="step"><button data-act="pd" data-arg="-1" aria-label="Less">−</button><b>' + S.pd + '</b><button data-act="pd" data-arg="1" aria-label="More">+</button></span></div></section>' +
+      '<section class="sec"><h3>Senior team</h3>' + ROLES.map((r) => { const p = S.team[r.id]; return p ? '<div class="person"><div class="row"><span class="lbl">' + r.title + '</span>' + stars(p.skill) + '</div><div class="row"><span class="who"><span class="mono">' + esc(initials(p.name)) + '</span><b>' + esc(p.name) + '</b></span><span class="num hint">' + money(p.salary) + '</span></div><p class="hint">' + esc(p.bio) + '</p><div class="row"><span class="hint">' + r.does + '</span><button class="btn sm" data-act="cands" data-arg="' + r.id + '">Replace</button></div></div>' : '<div class="person vacant"><div class="row"><span class="lbl">' + r.title + '</span><span class="tag warn">Vacant</span></div><div class="row"><span class="hint">' + r.does + '</span><button class="btn sm pri" data-act="cands" data-arg="' + r.id + '">Search</button></div></div>'; }).join('') + '</section>';
+  },
+  program(S) {
+    const st = students(S);
+    return '<section class="sec"><h3>Teaching quality</h3><div class="rows" data-live="eq">' + [0, 1, 2].map((d) => { const v = EQ(S, d); return '<div class="row"><span style="flex:0 0 36%">' + DIV_NAMES[d] + ' School</span>' + meter(v / 100, toneOf(v)) + '<span class="num" style="flex:0 0 28px;text-align:right">' + Math.round(v) + '</span></div>'; }).join('') + '</div><details><summary>What drives it (Upper School)</summary><div data-live="eqt">' + termsHTML(eqTerms(S, 2)) + '</div></details><p class="hint">Teaching quality is the product. Families feel it within months; reputation follows over years.</p></section>' +
+      '<section class="sec"><h3>Programs ' + NOW + '</h3>' + PROGRAMS.map((p) => {
+        const lvl = S.prog[p.id], ci = S.costIdx * S.drift, at = (k) => (p.revenue ? auxAt(S, k, st) : progCost(S, p.id, k, st, ci)), cost = at(lvl), locked = p.gate && !has(S, p.gate);
+        const next = lvl >= 5 ? 'This is the top level.' : locked && lvl >= 3 ? 'Levels 4 and 5 need the ' + BUILDINGS[p.gate].name + '. <button class="link" data-act="tab" data-arg="campus">Go to Campus</button>' : 'Level ' + (lvl + 1) + ' (' + LEVEL_WORDS[lvl + 1] + ') would ' + (p.revenue ? 'earn ' : 'cost ') + money(Math.abs(at(lvl + 1) - cost)) + ' more a year.';
+        return '<div class="prog"><div class="row"><h4>' + p.name + '</h4><span class="num ' + (p.revenue ? 'pos' : '') + '">' + (p.revenue ? '+' : '') + money(cost) + '/yr</span></div><div class="row"><span class="pips" role="group" aria-label="' + p.name + ' level"><button class="off' + (lvl === 0 ? ' on' : '') + '" data-act="prog" data-arg="' + p.id + ',0" aria-pressed="' + (lvl === 0) + '">Off</button>' +
+          [1, 2, 3, 4, 5].map((k) => '<button class="' + (k <= lvl ? 'on' : '') + (k > 3 && locked ? ' lock' : '') + '" data-act="prog" data-arg="' + p.id + ',' + k + '" aria-pressed="' + (k === lvl) + '" aria-label="Level ' + k + ', ' + LEVEL_WORDS[k] + (k > 3 && locked ? ', locked' : '') + '" title="' + LEVEL_WORDS[k] + '">' + (k > 3 && locked ? LOCK : k) + '</button>').join('') +
+          '</span><span class="tag ' + (lvl >= 5 ? 'good' : '') + '">' + LEVEL_WORDS[lvl] + '</span></div><p class="hint">' + p.does + '</p><p class="hint">' + next + '</p></div>';
+      }).join('') + '<p class="hint">Cutting a program stings families for most of a year. A Signature program adds to reputation.</p></section>' +
+      '<section class="sec"><h3>Students</h3><div class="rows">' + row('Academic profile of the student body', Math.round(profileAvg(S))) + row('College results <span class="hint">(recent classes)</span>', Math.round(S.college)) + row('Students on financial aid', pct(aidShare(S))) + '</div><p class="hint">Profile follows who you admit. A stronger class lifts college results and reputation; a weaker one needs Wellness & Learning Support or teaching suffers.</p></section>' +
+      '<section class="sec"><h3>Why families feel the way they do</h3><div data-live="satt">' + termsHTML(satTerms(S)) + '</div></section>';
+  },
+  campus(S) {
+    const c = avgCond(S), free = freeSlots(S).length, mt = Math.round(S.maint * 1000);
+    return '<section class="sec"><h3>Condition ' + NOW + '</h3><div data-live="cond"><div class="row"><span class="big">' + Math.round(c) + '</span>' + meter(c / 100, toneOf(c + 5)) + '</div><p class="hint">Deferred maintenance: ' + money(deferred(S)) + '. ' + (S.maint >= 0.0149 ? (S.maint > 0.0155 ? 'The campus is improving.' : 'The campus is holding steady.') : 'The campus is wearing down by about ' + (4 - S.maint / 0.015 * 4).toFixed(1) + ' points a year.') + '</p></div>' +
+      '<div class="slider"><div class="row"><span>Maintenance budget</span><b class="num" data-live="mt">' + (S.maint * 100).toFixed(1) + '% of building value · ' + money(plantValue(S) * S.maint) + '</b></div>' + slide('sl-mt', 'data-set="maint" min="0" max="30" step="1" value="' + mt + '" aria-label="Maintenance budget"') + '</div><p class="hint">1.5% holds buildings steady. Less saves money now and sends the bill later, usually in January.</p></section>' +
+      '<section class="sec"><h3>Seats</h3><div class="rows">' + [0, 1, 2].map((d) => { const n = divStudents(S, d), cp = capacity(S, d); return '<div class="row"><span style="flex:0 0 36%">' + DIV_NAMES[d] + ' School</span>' + meter(n / cp, n / cp > 0.96 ? 'bad' : n / cp > 0.88 ? 'warn' : '') + '<span class="num" style="flex:0 0 86px;text-align:right">' + n + ' / ' + cp + '</span></div>'; }).join('') + '</div></section>' +
+      (S.builds.length ? '<section class="sec"><h3>Under construction</h3><div class="rows">' + S.builds.map((b) => '<div class="row"><span style="flex:0 0 50%">' + BUILDINGS[b.t].name + '</span>' + meter(1 - b.left / b.total, 'warn') + '<span class="num" style="flex:0 0 70px;text-align:right">' + b.left + ' wks</span></div>').join('') + '</div></section>' : '') +
+      '<section class="sec"><h3>Buildings</h3><div class="rows">' + S.bld.map((b, k) => { const rc = renovCost(S, b); return '<div class="row"><span style="flex:0 0 40%">' + BUILDINGS[b.t].name + '</span>' + meter(b.cond / 100, toneOf(b.cond + 5)) + '<span style="flex:none">' + (b.cond < 88 ? '<button class="btn sm" data-act="renovate" data-arg="' + k + '" ' + (rc > S.cash + S.campaignFund ? 'disabled' : '') + ' title="Restore to like-new">Renovate ' + money(rc) + '</button>' : '<span class="tag good">Good</span>') + '</span></div>'; }).join('') + '</div></section>' +
+      '<section class="sec"><h3>Build <small>' + free + ' of ' + SLOTS.length + ' sites open</small></h3><p class="hint">Building fund: <b class="num">' + money(S.campaignFund) + '</b>. It is spent first; you choose cash or a bond for the rest.</p>' + BUILD_ORDER.map((t) => { const B = BUILDINGS[t], why = canBuild(S, t); return '<div class="build"><div class="row"><h4>' + B.name + '</h4><span class="num">' + money(buildCost(S, t)) + '</span></div><p class="hint">' + B.does + ' Takes ' + Math.round(B.weeks / 4) + ' months.' + (B.noSlot || B.replaces ? ' Does not use a site.' : '') + '</p><div class="row"><span class="hint">' + (why || '') + '</span><button class="btn sm" data-act="buildOpen" data-arg="' + t + '" ' + (why ? 'disabled' : '') + '>Plan it</button></div></div>'; }).join('') + '</section>';
+  },
+  giving(S) {
+    const f = fundAnnual(S), w = wk(S), k = S.campaign, why = canCampaign(S), cap = campaignCapacity(S), dr = Math.round(S.drawRate * 400) / 4;
+    return '<section class="sec"><h3>Annual fund <small>' + yearLabel(S) + '</small></h3><div data-live="af"><div class="row"><span class="big">' + money(S.ytd.fund) + '</span><span class="hint">raised of about ' + money(f) + '</span></div>' + meter(S.ytd.fund / Math.max(1, f), 'good') + '</div><div class="rows">' + row('Families who give', pct(fundParticipation(S))) + row('Alumni', num(S.alumni)) + row('Last year', money(S.lastFund)) + '</div><p class="hint">Giving follows satisfaction, family wealth, your Director of Advancement and the economy. The drive runs September to June.</p></section>' +
+      '<section class="sec"><h3>Endowment ' + NOW + '</h3><div class="row"><span class="big" data-live="end">' + money(S.endow) + '</span></div><div class="slider"><div class="row"><span>Annual draw</span><b class="num" data-live="dr">' + (S.drawRate * 100).toFixed(2) + '% · ' + money(S.endow * S.drawRate) + ' a year</b></div>' + slide('sl-dr', 'data-set="draw" min="0" max="8" step="0.25" value="' + dr + '" aria-label="Endowment draw"') + '</div><p class="hint">Markets return about 7% in a normal year. Draw more than they earn and the endowment shrinks; the board objects above 5.5%.</p></section>' +
+      '<section class="sec"><h3>Capital campaign</h3>' + (k ? '<div data-live="camp"><div class="row"><span class="big">' + money(k.raised) + '</span><span class="hint">of ' + money(k.goal) + ' · ' + Math.ceil(k.left / 4) + ' months left</span></div>' + meter(k.raised / k.goal, 'good') + '</div><p class="hint">Gifts land in the building fund as they arrive. The annual fund runs about 14% lighter while donors are being asked twice.</p>' :
+        '<p class="hint">' + (why ? why + '.' : 'Your advancement office believes this community could give about <b class="num">' + money(cap) + '</b> over two years.') + '</p>' + (why ? '' : '<div class="opts">' + CAMPAIGN_TIERS.map((t) => '<button class="opt" data-act="campaign" data-arg="' + t.id + '"><em>' + t.name + '</em><b class="num">' + money(Math.round(cap * t.mult / 50000) * 50000) + '</b><small>' + t.odds + '. ' + Math.round(t.weeks / 48) + ' years.</small></button>').join('') + '</div><p class="hint">Missing a public goal costs you with the board. Reputation and a strong Director of Advancement raise what is possible.</p>')) + '</section>' +
+      '<section class="sec"><h3>Building fund</h3><div class="row"><span class="big" data-live="bf">' + money(S.campaignFund) + '</span><button class="btn sm" data-act="toEndow" ' + (S.campaignFund < 100000 ? 'disabled' : '') + '>Move it to the endowment</button></div><p class="hint">Campaign gifts and capital bequests. Use it for construction or renovation on the Campus tab, or invest it for good.</p></section>';
+  },
+};
+function panelHTML() {
+  const t = App.tab, L = PANEL_LEAD[t];
+  return '<p class="lead-line"><b>' + L[0] + '.</b> ' + L[1] + '</p>' + (App.ui.seen[t] ? '' : '<div class="tip"><span>' + PANEL_TIP[t] + '</span><button class="btn sm" data-act="tipOk">Got it</button></div>') + PANELS[t](App.S);
+}
+function renderPanel() { if (!App.S) return; const p = $('panel'), sc = p.scrollTop; p.innerHTML = panelHTML(); p.scrollTop = sc; renderTabs(); }
+function refreshLive() {
+  if (!App.S) return; const p = $('panel'), tmp = document.createElement('div'); tmp.innerHTML = panelHTML();
+  p.querySelectorAll('[data-live]').forEach((el) => { const n = tmp.querySelector('[data-live="' + el.dataset.live + '"]'); if (n && n.innerHTML !== el.innerHTML) el.innerHTML = n.innerHTML; });
+}
+
+/* ---------- map card ---------- */
+function renderCard() {
+  const el = $('card'), S = App.S, c = App.card; App.map.selected = c && c.type === 'nb' && !App.setup ? c.id : null;
+  if (!c || !S || App.setup) { el.hidden = true; return; }
+  el.hidden = false;
+  if (c.type === 'nb') {
+    const nb = S.city.nbs[c.id], T = NB_TYPES[c.id], m = nbMarket(S, c.id), rv = S.city.rivals, cols = ['#8a6fb0', '#3f9a7a', '#c98a3a', '#ef7d3c'];
+    let bars = '<i style="width:' + (m.you * 100).toFixed(1) + '%;background:var(--accent)"></i>', leg = '<span style="--c:var(--accent)">You ' + pct(m.you) + '</span>';
+    rv.forEach((r, k) => { if (!r.open || m.riv[k] < 0.004) return; bars += '<i style="width:' + (m.riv[k] * 100).toFixed(1) + '%;background:' + cols[k % 4] + '"></i>'; leg += '<span style="--c:' + cols[k % 4] + '">' + esc(r.name.split(' ').slice(0, 2).join(' ')) + ' ' + pct(m.riv[k]) + '</span>'; });
+    leg += '<span style="--c:var(--line)">Public ' + pct(m.pub) + '</span>';
+    el.innerHTML = '<button class="x" data-act="closeCard" aria-label="Close">×</button><h3>' + esc(nb.name) + '</h3><p class="blurb">' + T.blurb + '</p>' +
+      '<div class="kv"><div><small>Children per grade</small><b>' + nb.kids + '</b></div><div><small>Household income</small><b>$' + Math.round(nb.inc) + 'k</b></div><div><small>Public schools</small><b>' + Math.round(nb.pq) + ' / 100</b></div><div><small>Drive to campus</small><b>' + Math.round(nb.dist * 1.4) + ' min</b></div><div><small>Your students</small><b>' + Math.round(S.nbE[c.id]) + '</b></div><div><small>Families who know you</small><b>' + pct(nb.aware) + '</b></div></div>' +
+      '<div class="sec"><span class="lbl">Where families open to private school land</span><div class="stack">' + bars + '</div><div class="legend">' + leg + '</div></div>' +
+      '<div class="btns"><button class="btn sm' + (S.focus.includes(c.id) ? ' on' : '') + '" data-act="focus" data-arg="' + c.id + '">' + (S.focus.includes(c.id) ? '\u2713 Marketing focus is on' : 'Focus marketing here') + '</button><button class="btn sm' + (S.bus.includes(c.id) ? ' on' : '') + '" data-act="bus" data-arg="' + c.id + '">' + (S.bus.includes(c.id) ? '\u2713 Bus route is running' : 'Run a bus · ' + money(85000 * S.costIdx) + '/yr') + '</button></div>';
+  } else if (c.type === 'rival') {
+    const r = S.city.rivals[c.id];
+    el.innerHTML = '<button class="x" data-act="closeCard" aria-label="Close">×</button><h3>' + esc(r.name) + '</h3><p class="blurb">' + r.blurb + '</p><div class="kv"><div><small>Tuition</small><b>' + (r.tuition ? money(r.tuition) : 'Free') + '</b></div><div><small>Yours</small><b>' + money(avgTuition(S)) + '</b></div><div><small>Reputation</small><b>' + Math.round(r.rep) + '</b></div><div><small>Yours</small><b>' + Math.round(S.rep) + '</b></div></div>';
+  }
+}
+
+/* ---------- dialogs ---------- */
+function openModal(html, o) {
+  o = o || {};
+  if (!App.modal && document.activeElement && document.activeElement !== document.body) App.prevFocus = document.activeElement;
+  App.modal = o.kind || 'x';
+  const lh = o.kind !== 'setup' && App.S ? '<div class="lh">' + crest(App.S.colors, App.S.emblem, 22) + '<b>' + esc(App.S.name) + '</b><i>' + esc(App.S.motto) + '</i></div>' : '';
+  $('modal').innerHTML = '<div class="scrim"><div class="modal' + (o.wide ? ' wide' : '') + '" role="dialog" aria-modal="true" tabindex="-1">' + lh + (o.dismiss ? '<button class="x" data-act="closeModal" aria-label="Close">\u00d7</button>' : '') + html + '</div></div>';
+  const f = $('modal').querySelector('.modal'); if (f) { f.scrollTop = 0; if (o.kind !== 'setup') f.focus({ preventScroll: true }); }
+  renderMapChrome();
+}
+function closeModal() {
+  App.modal = null; $('modal').innerHTML = ''; renderAll();
+  const p = App.prevFocus; App.prevFocus = null; if (p && document.contains(p) && p.focus) p.focus({ preventScroll: true });
+}
+function modalLive(html) { const box = $('modal').querySelector('.modal'), tmp = document.createElement('div'); tmp.innerHTML = html; box.querySelectorAll('[data-live]').forEach((el) => { const n = tmp.querySelector('[data-live="' + el.dataset.live + '"]'); if (n) el.innerHTML = n.innerHTML; }); }
+
+const MODALS = {
+  intro(S) {
+    const sc = SCENARIO_BY[S.scenario], chair = 'Margaret Ellery';
+    return '<span class="eyebrow">From the Chair of the Board</span><h2>Welcome to ' + esc(S.name) + '.</h2><p class="lead">' + sc.line + '</p><p>You have ' + students(S) + ' students, ' + sum(S.fac) + ' teachers, ' + money(S.cash) + ' in the bank and an endowment of ' + money(S.endow) + '. This year’s budget is on track to ' + (budget(S).net < 0 ? 'lose ' + money(-budget(S).net) : 'clear ' + money(budget(S).net)) + '.</p><p>The board has three priorities for your first contract:</p><div class="sec">' + S.goals.map((g) => '<div class="goal"><b>' + esc(goalText(g)) + '</b></div>').join('') + '</div><p>Your contract comes up for renewal in three years. We are behind you. We are also watching.</p><p style="font-family:var(--display);font-size:17px;color:var(--ink)">' + chair + '</p>' +
+      '<div class="outcome"><b>Getting started.</b> The clock is paused, so take a look around. The Overview tab has a short list of first steps. When you are ready, press play at the top right; the game pauses itself whenever something needs you.</div><div class="foot"><button class="btn" data-act="help">Help: how the year works</button><button class="btn pri" data-act="ok" data-arg="intro">Look around</button></div>';
+  },
+  event(S, p) {
+    const e = EVENT_BY[p.id];
+    return '<span class="eyebrow">' + esc(e.who) + '</span><h2>' + esc(e.title) + '</h2><p class="typed">' + esc(e.text(S)) + '</p><div class="sec" id="ev-body">' + e.choices.map((c, k) => '<button class="choice" data-act="evChoice" data-arg="' + p.id + ',' + k + '"><span>' + esc(c.label) + '</span>' + (c.note ? '<span class="note">' + esc(c.note) + '</span>' : '') + '<span class="tags">' + choiceTags(S, c).map((t) => '<span class="tag ' + t[0] + '">' + esc(t[1]) + '</span>').join('') + '</span></button>').join('') + '</div>';
+  },
+  budget(S) {
+    const m = App.m, p = projectNext(S, m.tp, m.rp), now = budget(S), infl = S.infl * 100, mr = minRaise(S);
+    const cmt = [];
+    if (m.tp > infl + 3.5) cmt.push(['bad', 'Families will feel a ' + m.tp + '% increase. Expect more departures at re-enrollment.']); else if (m.tp < infl) cmt.push(['warn', 'Tuition would fall behind your costs, which rise about ' + (infl + 1).toFixed(1) + '%.']);
+    if (m.rp < infl) cmt.push(['bad', 'A ' + m.rp + '% raise is a pay cut after inflation. Morale will drop.']); else if (m.rp < infl + 1) cmt.push(['warn', 'Other schools are raising pay about ' + (infl + 1).toFixed(1) + '%. You would slip against the market.']); else if (m.rp > infl + 2.5) cmt.push(['good', 'A raise well above the market. Faculty will notice.']);
+    if (S.flags.payPromise && m.rp < infl + 1) cmt.push(['bad', 'You promised the faculty raises above inflation. This breaks that promise.']);
+    if (p.b.net < -0.03 * p.b.revT) cmt.push(['bad', 'The finance committee will not like a deficit this size.']);
+    const cell = (a, b) => '<td class="r">' + money(a) + '</td><td class="r">' + money(b) + '</td>';
+    return '<span class="eyebrow">January · Budget meeting</span><h2>Set next year’s budget</h2><p>Two numbers shape ' + yearLabel(S, yr(S) + 1) + ': what families pay and what faculty earn. Prices are rising ' + infl.toFixed(1) + '% a year, and schools\u2019 costs and teacher pay elsewhere about a point faster. Competitors usually raise tuition a point or two above inflation.</p>' +
+      '<div class="slider"><div class="row"><span><b>Tuition increase</b></span><b class="num" data-live="tp">' + m.tp.toFixed(1) + '% · Upper School ' + money(S.tuition[2] * (1 + m.tp / 100)) + '</b></div>' + slide('m-tp', 'data-m="tp" min="0" max="10" step="0.5" value="' + m.tp + '" aria-label="Tuition increase"') + '</div>' +
+      '<div class="slider"><div class="row"><span><b>Salary pool increase</b></span><b class="num" data-live="rp">' + m.rp.toFixed(1) + '% · pay moves to ' + Math.round(p.payIdx * 100) + '% of market</b></div>' + slide('m-rp', 'data-m="rp" min="' + mr + '" max="8" step="0.5" value="' + m.rp + '" aria-label="Salary increase"') + '</div>' +
+      '<div data-live="bproj"><div class="scroll-x"><table class="tbl"><tr><th></th><th class="r">This year</th><th class="r">Next year</th></tr><tr><td>Net tuition</td>' + cell(now.ntr, p.b.ntr) + '</tr><tr><td>Giving, endowment, auxiliary</td>' + cell(now.revT - now.ntr, p.b.revT - p.b.ntr) + '</tr><tr><td>Faculty</td>' + cell(now.exp.faculty, p.b.exp.faculty) + '</tr><tr><td>Everything else</td>' + cell(now.expT - now.exp.faculty, p.b.expT - p.b.exp.faculty) + '</tr><tr><td><b>Result</b></td><td class="r"><b>' + money(now.net, true) + '</b></td><td class="r ' + (p.b.net < 0 ? 'neg' : 'pos') + '"><b>' + money(p.b.net, true) + '</b></td></tr></table></div><p class="hint">Assumes about ' + Math.round(students(S) * p.em) + ' students. Your admission office says give or take ' + money(p.band) + ', depending on enrollment.</p><div class="sec">' + cmt.map((c) => '<div class="cmt ' + c[0] + '">' + c[1] + '</div>').join('') + '</div></div>' +
+      '<p class="hint">Drag a slider or use \u2212 and +. Once adopted, tuition and salaries are fixed until next January. They take effect in July.</p><div class="foot"><button class="btn pri" data-act="budgetOk">Adopt the budget</button></div>';
+  },
+  admit(S) {
+    const m = App.m, plan = planAdmissions(S, m.admit, m.aid), ret = S.returning || [], T = S.tuition;
+    const rows = [0, 1, 2].map((d) => { let stay = 0; for (const g of DIV_GRADES[d]) if (g > 0) stay += ret[g - 1] || 0; const nextN = stay + plan.exp[d], cp = capacity(S, d);
+      return '<div class="prog"><div class="row"><h4>' + DIV_NAMES[d] + ' School</h4><span class="num" data-live="ah' + d + '"><b>' + plan.cnt[d] + '</b> admitted of ' + plan.apps[d] + '</span></div>' + slide('m-ad' + d, 'data-m="admit' + d + '" min="0" max="' + plan.apps[d] + '" step="1" value="' + Math.min(m.admit[d], plan.apps[d]) + '" aria-label="Offers in ' + DIV_NAMES[d] + ' School"') +
+        '<div data-live="af' + d + '"><div class="row hint"><span>Expect about <b>' + Math.round(plan.exp[d]) + '</b> to enroll \u00b7 class profile ' + (plan.cnt[d] ? Math.round(plan.q[d]) : '\u2014') + '</span><span class="' + (nextN > cp ? 'neg' : '') + '">' + Math.round(nextN) + ' / ' + cp + ' seats</span></div>' + (plan.wait[d] || plan.unfunded[d] ? '<div class="tags hint">' + (plan.wait[d] ? '<span class="tag warn">' + plan.wait[d] + ' wait-listed, grade full</span> ' : '') + (plan.unfunded[d] ? '<span class="tag warn">' + plan.unfunded[d] + ' passed over, no aid left</span>' : '') + '</div>' : '') + '</div></div>'; }).join('');
+    const cur = profileAvg(S), tot = sum(plan.exp);
+    return '<span class="eyebrow">March · Admission committee</span><h2>Who gets in?</h2><p>' + S.adm.apps + ' families applied. Offers go to the strongest applicants first. Admit deeper and you fill seats but lower the class profile; hold the line and you stay selective but smaller. About ' + pct(S.lastRetention) + ' of current families are returning.</p>' +
+      '<div class="sec">' + rows + '</div>' +
+      '<div class="slider"><div class="row"><span><b>Financial aid for new students</b></span><b class="num" data-live="aid">' + money(m.aid) + ' · ' + plan.aided + ' aided offers</b></div>' + slide('m-aid', 'data-m="aid" min="0" max="' + Math.max(10000, maxAid(S)) + '" step="10000" value="' + m.aid + '" aria-label="Aid budget"') + '</div><p class="hint">Aid opens the door to strong applicants who cannot pay full price. It also follows each student until they graduate.</p>' +
+      '<div class="rows" data-live="asum">' + row('New students expected', Math.round(tot)) + row('New tuition, after aid', money(plan.revExp)) + row('Aid committed <span class="hint">(per year)</span>', money(plan.aidExp)) + row('Incoming class profile <span class="hint">(school average ' + Math.round(cur) + ')</span>', sum(plan.cnt) ? Math.round((plan.q[0] * plan.cnt[0] + plan.q[1] * plan.cnt[1] + plan.q[2] * plan.cnt[2]) / sum(plan.cnt)) : '—') + '</div>' +
+      '<div class="foot"><button class="btn pri" data-act="admitOk">Mail the decisions</button></div>';
+  },
+  deposits(S) {
+    const r = S.adm.results, ret = S.returning || []; let stay = 0; for (let g = 0; g < 12; g++) stay += ret[g] || 0;
+    return '<span class="eyebrow">April · Deposit deadline</span><h2>' + sum(r.enr) + ' new students said yes.</h2><p>Yield was ' + pct(r.yield) + ' of the families you admitted. With ' + stay + ' returning students, next year opens at about <b>' + (stay + sum(r.enr)) + '</b>.</p><div class="grades">' + [0, 1, 2].map((d) => '<div class="gradebox"><span class="lbl">' + DIV_NAMES[d] + ' School</span><b>' + r.enr[d] + '</b><small>of ' + r.adm[d] + ' admitted</small></div>').join('') + '</div><div class="rows">' + row('Incoming class profile', r.q ? Math.round(r.q) : '—') + row('New financial aid committed', money(r.aid)) + '</div><div class="foot"><button class="btn pri" data-act="ok" data-arg="deposits">Continue</button></div>';
+  },
+  opening(S, p) {
+    const d = p.n - p.prev;
+    return '<span class="eyebrow">August · Opening Day</span><h2>The buses pull in.</h2><div class="hero"><span class="scorebox">' + led(p.n) + '</span><p class="lead">students on the first day of school' + (yr(S) === 0 ? '.' : ', ' + (d === 0 ? 'the same as last year.' : d > 0 ? 'up ' + d + ' from last year.' : 'down ' + -d + ' from last year.')) + '</p></div><div class="grades">' + [0, 1, 2].map((x) => '<div class="gradebox"><span class="lbl">' + DIV_NAMES[x] + ' School</span><b>' + divStudents(S, x) + '</b><small>' + capacity(S, x) + ' seats · ' + ratio(S, x).toFixed(1) + ' per teacher</small></div>').join('') + '</div><p>' + (p.melt ? p.melt + ' families changed plans over the summer. ' : '') + (p.late ? p.late + ' enrolled late. ' : '') + 'This is the number your budget lives on until June. A division near 9 students per teacher is staffed about right.</p><div class="foot"><button class="btn" data-act="okGo" data-arg="opening,people">Check staffing</button><button class="btn pri" data-act="ok" data-arg="opening">Start the year</button></div>';
+  },
+  review(S) {
+    const r = S.review, lg = legacy(S);
+    return '<span class="eyebrow">June · Board of Trustees</span><h2>Your report card for ' + yearLabel(S, r.y) + '</h2><div class="grades">' + r.areas.map((a) => '<div class="gradebox"><span class="lbl">' + a.name + '</span><b class="' + (a.score < a.expect - 3 ? 'neg' : a.score >= a.expect + 3 ? 'pos' : '') + '">' + a.grade + '</b><small>' + esc(a.note) + '</small><small>The board expected ' + letter(a.expect) + '</small></div>').join('') + '</div>' +
+      (r.goalNotes.length ? '<div class="sec">' + r.goalNotes.map((g) => '<div class="goal ' + (g.ok ? 'done' : 'failed') + '"><div class="row"><span><b>' + esc(g.text) + '</b></span><span class="tag ' + (g.ok ? 'good' : 'bad') + '">' + (g.ok ? 'Achieved' : 'Missed') + '</span></div></div>').join('') + '</div>' : '') +
+      '<div class="rows"><div class="row"><span>Board confidence</span>' + meter(r.board / 100, toneOf(r.board)) + '<span class="num"><b>' + Math.round(r.board) + '</b> <span class="' + (r.delta >= 0 ? 'pos' : 'neg') + '">' + (r.delta >= 0 ? '+' : '−') + Math.abs(r.delta).toFixed(0) + '</span></span></div>' + row('Operating result', '<span class="' + (r.net < 0 ? 'neg' : 'pos') + '">' + money(r.net, true) + '</span>') + row('Legacy', lg.total + ' · ' + lg.title) + '</div>' +
+      '<p class="lead">' + (r.verdict === 'ended' ? 'The board has voted not to renew your contract.' : r.verdict === 'renewed' ? 'The board has renewed your contract for three more years.' : r.delta >= 4 ? 'The board is pleased. The chair uses the word "momentum."' : r.delta >= -2 ? 'The board is patient, for now. They grade progress from where you started, and expect more each year.' : 'The board is worried, and several trustees said so on the record.') + '</p>' +
+      '<div class="foot">' + (r.retire && r.verdict !== 'ended' ? '<button class="btn" data-act="reviewOk" data-arg="retire">Retire with honor</button>' : '') + '<button class="btn pri" data-act="reviewOk">' + (r.verdict === 'ended' ? 'Clear out your office' : 'On to next year') + '</button></div>';
+  },
+  over(S) {
+    const o = S.over, lg = o.legacy, y = Math.floor(o.week / WPY) + (o.why === 'retired' ? 0 : 1);
+    const txt = { retired: ['Retirement', 'You hand over the keys.', 'After ' + y + ' years, you leave ' + S.name + ' on your own terms. There is a dinner. People cry, including two trustees who voted against your first budget.'], nonrenewal: ['Contract not renewed', 'The board goes another direction.', 'The announcement thanks you for your service and wishes you well in your future endeavors. A search firm is already on campus.'], fired: ['Dismissed', 'The board has lost confidence.', 'An emergency meeting, a prepared statement, an interim head by Monday. You are asked to return your keys.'], insolvent: ['Insolvent', 'The money ran out.', 'The trustees had already written checks once. This time there is no one left to ask. ' + S.name + ' will merge with a competitor in July.'], closed: ['Closed', 'There are not enough students to open.', 'With fewer than 110 students enrolled, the board votes to close ' + S.name + ' at the end of the year.'] }[o.why];
+    return '<span class="eyebrow">' + txt[0] + ' · ' + y + (y === 1 ? ' year' : ' years') + ' as head</span><h2>' + txt[1] + '</h2><p class="lead">' + esc(txt[2]) + '</p><div class="hero"><span class="scorebox">' + led(lg.total) + '</span><p class="lead">legacy points of 1,000.<br>They will remember you as <b>' + lg.title + '</b>.</p></div><div class="rows">' + lg.parts.map((p) => '<div class="row"><span style="flex:0 0 40%">' + p.name + '</span>' + meter(p.frac) + '<span class="num" style="flex:0 0 62px;text-align:right">' + p.pts + '/' + p.max + '</span></div>').join('') + '</div><div class="rows">' + row('Students', S.start.students + ' → ' + students(S)) + row('Reputation', Math.round(S.start.rep) + ' → ' + Math.round(S.rep)) + row('Cash, endowment and building fund, less debt', money(S.start.worth) + ' → ' + money(S.cash + S.endow + S.campaignFund - S.debt)) + '</div><div class="foot"><button class="btn pri" data-act="newGameNow">Start a new school</button></div>';
+  },
+  help() {
+    return '<span class="eyebrow">How it works</span><h2>The school year</h2><p>Time runs week by week from July to June. Most settings can change at any moment. Three decisions happen once a year, and the game pauses for each.</p><div class="cycle">' + [['July', 'A new year begins. New tuition, new salaries and the new class take effect. Hire and build while campus is quiet.'], ['August', 'Opening Day. The enrollment you open with is the revenue you live on all year.'], ['Sept–Jan', 'Admission season. Reputation, price, awareness and bus routes decide how many families apply. The annual fund drive begins.'], ['January', 'Budget meeting. You set next year’s tuition increase and salary pool.'], ['February', 'Re-enrollment. Satisfied families return; unhappy ones, or ones facing a big increase, leave.'], ['March', 'Admission decisions. You choose how deep to admit and how much aid to offer.'], ['April', 'Deposits arrive, and teachers decide whether to stay.'], ['June', 'Commencement, then the board grades your year. Every third year they vote on your contract.']].map((x) => '<div><b>' + x[0] + '</b><span>' + x[1] + '</span></div>').join('') + '</div>' +
+      '<h2 style="font-size:20px">What drives what</h2><div class="cycle">' + [['Teaching', 'Faculty quality, class size, program depth and facilities make teaching quality. It is the product.'], ['Families', 'Satisfaction follows teaching quality, student life and value for the price. It drives retention, giving and word of mouth.'], ['Reputation', 'Moves slowly. Built from teaching quality, college results and what families say. It drives applications.'], ['Faculty', 'Pay against the market, workload and growth set morale. Low morale costs you your best teachers first.'], ['Money', 'Tuition less aid is most of your revenue; people are most of your cost. Filling an empty seat is nearly pure margin.'], ['Board', 'They grade progress in six areas against where you started, and expect more each year.']].map((x) => '<div><b>' + x[0] + '</b><span>' + x[1] + '</span></div>').join('') + '</div>' +
+      '<h2 style="font-size:20px">Controls</h2><div class="cycle">' + [['Time', 'Play, fast and fastest are at the top right. Space pauses and resumes; 1, 2 and 3 set the speed. The game pauses itself for every decision.'], ['Top numbers', 'Every number in the top row is a button. Students, Cash and This year open their tab; Reputation, Families, Faculty and Board show exactly what is pushing them.'], ['Tabs', 'Seven tabs hold every setting. [ and ] step through them. A red count on a tab means something there is urgent.'], ['Settings', 'Sliders, \u2212 / + buttons and numbered level boxes apply at once. Tuition and salaries are the exception: they are set at the January budget meeting.'], ['Map', 'Click a neighborhood for its families and your options there; click your campus for the Campus tab. Drag to move, scroll or pinch to zoom; + and \u2212 also zoom, and 0 returns to campus. The buttons at the top left color the city by income, children or your reach.'], ['Next', 'The "Next" line by the calendar opens the year ahead.']].map((x) => '<div><b>' + x[0] + '</b><span>' + x[1] + '</span></div>').join('') + '</div><div class="foot"><button class="btn pri" data-act="closeModal">Got it</button></div>';
+  },
+  drivers(S, kind) {
+    const D = { rep: ['Reputation', 'How the city sees you. It moves slowly toward the total below and decides how many families apply.', repTerms], sat: ['Family satisfaction', 'How current parents feel. It drifts toward the total below over a few months and decides who re-enrolls and who gives.', satTerms], morale: ['Faculty morale', 'How teachers feel. It decides who leaves in April and how well the rest teach.', moraleTerms] }[kind];
+    if (kind === 'board') return '<span class="eyebrow">Why this number</span><h2>Board confidence: ' + Math.round(S.board) + '</h2><p>The trustees hired you and can replace you. Each June they grade six areas against where the school stood when you arrived, and they expect more every year. Meeting a goal adds 6 points; missing one costs 4. Below 35 at a contract review, or 10 at any time, and you are out.</p><div class="rows">' + ['Enrollment', 'Finances', 'Program', 'Faculty', 'Families', 'Advancement'].map((n, k) => row(n, 'expects ' + letter(S.expect[k]) + ' or better')).join('') + '</div><p class="hint">Also on their minds: overdrafts, deficit budgets, an endowment draw above 5.5%, and how you handle the hard calls.</p><div class="foot"><button class="btn pri" data-act="closeModal">Close</button></div>';
+    const t = D[2](S), tot = termSum(t), cur = S[kind];
+    return '<span class="eyebrow">Why this number</span><h2>' + D[0] + ': ' + Math.round(cur) + '</h2><p>' + D[1] + '</p>' + termsHTML(t) + '<div class="rows"><div class="row tot"><span>Heading toward</span><span class="num">' + Math.round(tot) + ' ' + (tot > cur + 1 ? '<span class="pos">▲</span>' : tot < cur - 1 ? '<span class="neg">▼</span>' : '') + '</span></div></div><div class="foot"><button class="btn pri" data-act="closeModal">Close</button></div>';
+  },
+  cands(S, role) {
+    const r = ROLE_BY[role], cur = S.team[role];
+    return '<span class="eyebrow">Search</span><h2>' + r.title + '</h2><p>' + r.does + ' ' + (cur ? 'Replacing ' + esc(cur.name) + ' costs ' + money(cur.salary * 0.2) + ' in severance.' : 'The job is open.') + ' A stronger reputation attracts stronger candidates; the pool refreshes each July.</p><div class="sec">' + (S.cands[role].length ? S.cands[role].map((c, k) => '<div class="person"><div class="row"><span class="who"><span class="mono">' + esc(initials(c.name)) + '</span><b>' + esc(c.name) + '</b></span>' + stars(c.skill) + '</div><p class="hint">' + esc(c.bio) + '</p><div class="row"><span class="num">' + money(c.salary) + ' a year</span><button class="btn sm pri" data-act="hire" data-arg="' + role + ',' + k + '">Hire</button></div></div>').join('') : '<p class="hint">No candidates left this year.</p>') + '</div><div class="foot"><button class="btn" data-act="closeModal">Not now</button></div>';
+  },
+  build(S, t) {
+    const B = BUILDINGS[t], cost = buildCost(S, t), fromFund = Math.min(S.campaignFund, cost), rest = cost - fromFund, lim = borrowLimit(S), rate = borrowRate(S);
+    return '<span class="eyebrow">Capital project</span><h2>' + B.name + '</h2><p>' + B.does + ' Construction takes ' + Math.round(B.weeks / 4) + ' months and adds about ' + money(cost * 0.017) + ' a year in upkeep.</p><div class="rows">' + row('Cost', money(cost)) + row('From the building fund', money(fromFund)) + row('<b>Left to pay</b>', '<b>' + money(rest) + '</b>') + '</div>' +
+      '<div class="opts"><button class="opt" data-act="build" data-arg="' + t + ',cash" ' + (rest > S.cash ? 'disabled' : '') + '><em>Pay cash</em><b class="num">' + money(rest) + '</b><small>' + (rest > S.cash ? 'You have ' + money(S.cash) + '.' : 'Leaves ' + money(S.cash - rest) + ' in the bank.') + '</small></button><button class="opt" data-act="build" data-arg="' + t + ',debt" ' + (rest > lim || rest <= 0 ? 'disabled' : '') + '><em>Issue a bond</em><b class="num">' + pct(rate, 1) + ' interest</b><small>' + (rest > lim ? 'Lenders will only go to ' + money(lim) + '.' : 'Adds about ' + money(rest * (rate + 1 / 22)) + ' a year in payments.') + '</small></button></div><div class="foot"><button class="btn" data-act="closeModal">Not now</button></div>';
+  },
+  menu(S) {
+    return '<span class="eyebrow">Menu</span><h2>' + esc(S.name) + '</h2><p>' + esc(S.city.name) + ' \u00b7 ' + mission(S).name + ' \u00b7 Year ' + (yr(S) + 1) + '. Your school saves itself in this browser every month.</p><div class="sec"><button class="choice" data-act="help">Help: how the year works and the controls</button><button class="choice" data-act="sound">Sound: ' + (App.sound ? 'on' : 'off') + '</button><button class="choice" data-act="tourOn">Show the first steps list again</button>' + (yr(S) >= 9 ? '<button class="choice" data-act="retireAsk">Retire and see your legacy</button>' : '') + '<button class="choice" data-act="newGame">Start a new school</button></div><div class="foot"><button class="btn pri" data-act="closeModal">Back to school</button></div>';
+  },
+  year(S) {
+    const w = wk(S);
+    const list = MILESTONES.map((m) => ({ m, left: m[0] > w ? m[0] - w : m[0] - w + WPY })).sort((a, b) => a.left - b.left);
+    return '<span class="eyebrow">' + dateLabel(S) + ' \u00b7 ' + yearLabel(S) + '</span><h2>The year ahead</h2><div class="cycle">' + list.map((x) => '<div><b>' + (x.left === 1 ? '1 week' : x.left + ' weeks') + '</b><span><b style="font-family:var(--body);font-size:13.5px;color:var(--ink)">' + x.m[1] + '.</b> ' + x.m[2] + '</span></div>').join('') + '</div><div class="foot"><button class="btn pri" data-act="closeModal">Close</button></div>';
+  },
+  confirm(S, o) { return '<h2>' + o.title + '</h2><p>' + o.text + '</p><div class="foot"><button class="btn" data-act="closeModal">Cancel</button><button class="btn pri" data-act="' + o.act + '">' + o.yes + '</button></div>'; },
+  setup() {
+    const s = App.setup, hasSave = !!loadSave();
+    return '<div class="hero">' + crest(s.colors, s.emblem, 64) + '<div><h1>Head of School</h1><p class="lead">Run an independent school in a living city. Fill the seats, keep the faculty, balance the books, and try to leave it better than you found it.</p></div></div>' +
+      (hasSave ? '<div class="foot" style="justify-content:flex-start"><button class="btn pri" data-act="continue">Continue your saved school</button></div>' : '') +
+      '<div class="field"><label class="lbl" for="su-name">School name</label><div class="row"><input type="text" id="su-name" maxlength="34" value="' + esc(s.name) + '" autocomplete="off"><button class="btn" data-act="suShuffle">Shuffle</button></div></div>' +
+      '<div class="grid2"><div class="pick"><span class="lbl">School colors</span><div class="swatches">' + SCHOOL_COLORS.map((c, k) => '<button class="swatch" data-act="suColor" data-arg="' + k + '" aria-pressed="' + (s.colors[0] === c[0]) + '" aria-label="Colors ' + (k + 1) + '"><i style="background:' + c[0] + '"></i><i style="background:' + c[1] + '"></i></button>').join('') + '</div></div><div class="pick"><span class="lbl">Emblem</span><div class="swatches">' + EMBLEMS.map((e) => '<button class="emb" data-act="suEmblem" data-arg="' + e + '" aria-pressed="' + (s.emblem === e) + '" aria-label="' + e + '"><svg width="26" height="26" viewBox="8 12 24 26"><rect x="8" y="12" width="24" height="26" rx="4" fill="' + s.colors[0] + '"/>' + emblemSvg(e, s.colors[0]) + '</svg></button>').join('') + '</div></div></div>' +
+      '<div class="pick"><span class="lbl">Mission</span><div class="opts">' + MISSIONS.map((m) => '<button class="opt" data-act="suMission" data-arg="' + m.id + '" aria-pressed="' + (s.mission === m.id) + '"><b>' + m.name + '</b><small>' + m.line + '</small><small>' + m.perks.map((p) => '• ' + p).join('<br>') + '</small></button>').join('') + '</div></div>' +
+      '<div class="pick"><span class="lbl">Where you start</span><div class="opts">' + SCENARIOS.map((c) => '<button class="opt" data-act="suScenario" data-arg="' + c.id + '" aria-pressed="' + (s.scenario === c.id) + '"><em>' + c.level + '</em><b>' + c.name + '</b><small>' + c.line + '</small></button>').join('') + '</div></div>' +
+      '<div class="foot"><button class="btn" data-act="suCity">New city</button><button class="btn pri" data-act="suBegin">Accept the job</button></div>';
+  },
+};
+function showModal(kind, arg, o) { openModal(MODALS[kind](App.S, arg), Object.assign({ kind }, o || {})); }
+function showPending() {
+  const S = App.S; if (!S || App.modal || App.setup) return;
+  const p = S.pending.find((x) => x.block); if (!p) return;
+  if (p.type === 'budget') { const i = S.infl * 100; App.m = { tp: Math.round((i + 1.5) * 2) / 2, rp: Math.max(minRaise(S), Math.round((i + 1) * 2) / 2) }; }
+  if (p.type === 'admit') App.m = { admit: defaultAdmit(S), aid: Math.min(maxAid(S), defaultAid(S)) };
+  showModal(p.type, p, { wide: p.type === 'admit' || p.type === 'review' || p.type === 'over' });
+  if (p.type === 'budget' || p.type === 'admit' || p.type === 'review') beep('bell');
+}
+function toast(l) {
+  const box = $('toasts'); let el = l.key ? box.querySelector('[data-key="' + l.key + '"]') : null;
+  if (!el) { el = document.createElement('div'); if (l.key) el.dataset.key = l.key; box.appendChild(el); }
+  el.className = 'toast k-' + l.kind; el.textContent = l.text; clearTimeout(el._t);
+  while (box.children.length > 3) box.removeChild(box.firstChild);
+  el._t = setTimeout(() => { if (el.parentNode) el.parentNode.removeChild(el); }, 5200);
+}
+function renderAll() { renderTop(); renderPanel(); renderCard(); }
